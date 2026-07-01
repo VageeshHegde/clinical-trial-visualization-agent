@@ -4,7 +4,12 @@ from agents import Runner
 
 from app.agent.visualization import create_visualization_agent
 from app.config import get_settings
-from app.models.schemas import QueryRequest, QueryResponse, TrialSummary, VisualizationSpec
+from app.models.schemas import (
+    AgentVisualizationOutput,
+    QueryRequest,
+    QueryResponse,
+    TrialSummary,
+)
 from app.services.visualization_builder import enhance_visualization
 
 
@@ -16,18 +21,20 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     agent = create_visualization_agent(settings)
     result = await Runner.run(agent, request.question)
 
-    visualization = result.final_output
-    if not isinstance(visualization, VisualizationSpec):
-        raise TypeError("Agent did not return a VisualizationSpec")
+    agent_output = result.final_output
+    if not isinstance(agent_output, AgentVisualizationOutput):
+        raise TypeError("Agent did not return an AgentVisualizationOutput")
 
-    visualization = enhance_visualization(request.question, result, visualization)
+    visualization = enhance_visualization(
+        request.question, result, agent_output.visualization
+    )
 
     trials = _extract_trials_from_run(result)
 
     return QueryResponse(
         question=request.question,
         visualization=visualization,
-        follow_questions=visualization.follow_questions,
+        follow_questions=agent_output.follow_questions,
         trials=trials,
     )
 

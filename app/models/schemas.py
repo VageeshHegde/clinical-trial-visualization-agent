@@ -47,6 +47,12 @@ class VisualizationSpec(BaseModel):
         default_factory=dict,
         description="Query context: filters applied, total trials, data source, etc.",
     )
+
+
+class AgentVisualizationOutput(BaseModel):
+    """Structured agent output: chart spec plus suggested follow-ups."""
+
+    visualization: VisualizationSpec
     follow_questions: list[str] = Field(
         default_factory=list,
         description="2-3 suggested follow-up questions the user can ask next",
@@ -78,7 +84,7 @@ class QueryResponse(BaseModel):
     )
     trials: list[TrialSummary] = Field(
         default_factory=list,
-        description="Sample of underlying trial records used in the analysis",
+        description="Source trial records (NCT IDs) sampled for the analysis; supports traceability",
     )
 
 
@@ -99,3 +105,7 @@ class AggregationResult(BaseModel):
     total_trials: int
     buckets: list[AggregationBucket]
     search_description: str
+    trials: list[TrialSummary] = Field(
+        default_factory=list,
+        description="Trial records sampled from the search that produced the aggregation",
+    )

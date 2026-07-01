@@ -76,7 +76,6 @@ def build_chart_from_buckets(
     summary: str,
     meta: dict,
     total_trials: int,
-    follow_questions: list[str] | None = None,
 ) -> VisualizationSpec:
     data = [{"label": label, "count": count} for label, count in buckets if count > 0]
     chart_type = _choose_chart_type(len(data))
@@ -96,7 +95,6 @@ def build_chart_from_buckets(
             "total_trials": total_trials,
             "chart_source": "aggregation",
         },
-        follow_questions=follow_questions or [],
     )
 
 
@@ -112,7 +110,6 @@ def build_chart_from_aggregation(
         summary=visualization.summary,
         meta=visualization.meta,
         total_trials=aggregation.total_trials,
-        follow_questions=visualization.follow_questions,
     )
 
 
@@ -179,5 +176,4 @@ def enhance_visualization(
         summary=visualization.summary,
         meta=visualization.meta,
         total_trials=len(trials),
-        follow_questions=visualization.follow_questions,
     )

@@ -8,7 +8,7 @@ from app.clinical_trials.tools import (
     search_clinical_trials,
 )
 from app.config import Settings, get_settings
-from app.models.schemas import VisualizationSpec
+from app.models.schemas import AgentVisualizationOutput
 
 VISUALIZATION_INSTRUCTIONS = """\
 You are a clinical trials data analyst that helps users explore ClinicalTrials.gov.
@@ -17,7 +17,7 @@ Your job:
 1. Interpret the user's plain-English question and decide what data to fetch.
 2. Use the provided tools to query ClinicalTrials.gov — never invent trial data.
 3. Analyze the returned results and choose an appropriate visualization.
-4. Return a VisualizationSpec the frontend can render directly.
+4. Return a visualization spec the frontend can render, plus follow-up questions.
 
 Tool usage guidelines:
 - Use count_trials_by_field for ANY question about counts, "how many", breakdowns,
@@ -50,9 +50,9 @@ Data format for tables (only when listing trials):
 Write summary as a clear plain-English answer. Include meta with search_description,
 filters used, and total_trials analyzed.
 
-Always include follow_questions: 2-3 short, specific next questions the user might ask
-based on the current query and results (e.g. drill down by sponsor, filter to phase 3,
-or list top trials).
+Always include follow_questions at the top level (not inside visualization): 2-3 short,
+specific next questions the user might ask based on the current query and results
+(e.g. drill down by sponsor, filter to phase 3, or list top trials).
 """
 
 
@@ -64,6 +64,6 @@ def create_visualization_agent(settings: Settings | None = None) -> Agent:
         name="Clinical Trial Visualization Agent",
         instructions=VISUALIZATION_INSTRUCTIONS,
         tools=[count_trials_by_field, search_clinical_trials, get_clinical_trial],
-        output_type=AgentOutputSchema(VisualizationSpec, strict_json_schema=False),
+        output_type=AgentOutputSchema(AgentVisualizationOutput, strict_json_schema=False),
         model=config.openai_model,
     )

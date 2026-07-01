@@ -15,3 +15,6 @@ dependencies = [
 
 [project.scripts]
 clinical-trials-agent = "main:main"
+
+[tool.vercel]
+entrypoint = "app.api:app"

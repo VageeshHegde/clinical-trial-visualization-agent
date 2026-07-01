@@ -55,7 +55,7 @@ flowchart TD
 - **get_clinical_trial** — fetch a single trial by NCT ID
 - **count_trials_by_field** — aggregate trial counts by status, phase, sponsor, condition, or study type (preferred for bar/pie charts)
 
-The agent returns a `VisualizationSpec` with chart type, data rows, axis encoding, summary text, follow-up questions, and metadata. `pipeline.py` then runs `enhance_visualization` to correct chart types when needed and `_extract_trials_from_run` to attach a sample of underlying trial rows.
+The agent returns a `VisualizationSpec` plus `follow_questions`. `pipeline.py` runs `enhance_visualization` to correct chart types when needed and `_extract_trials_from_run` to attach source trial records (including from aggregation tools) for traceability. Follow-ups are exposed only at the top level of `QueryResponse`.
 
 ### Chart type selection
 
@@ -138,8 +138,19 @@ python main.py --repl
     "How many of these trials are in phase 3?",
     "Show recruiting trials for the same condition"
   ],
-  "trials": []
+  "trials": [
+    {
+      "nct_id": "NCT01234567",
+      "title": "Example Diabetes Study",
+      "status": "RECRUITING",
+      "phases": ["PHASE3"],
+      "conditions": ["Type 2 Diabetes"],
+      "sponsor": "Example University"
+    }
+  ]
 }
 ```
+
+`trials` lists source records behind the visualization (including chart answers from aggregation). NCT IDs in the UI link to `https://clinicaltrials.gov/study/{nct_id}`.
 
 Supported `chart_type` values: `bar`, `pie`, `line`, `table`, `metric_cards`, `grouped_bar`.

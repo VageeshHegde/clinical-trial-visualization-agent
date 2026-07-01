@@ -6,7 +6,7 @@ from agents import Runner
 
 from app.agent.visualization import create_visualization_agent
 from app.config import get_settings
-from app.models.schemas import QueryRequest, VisualizationSpec
+from app.models.schemas import AgentVisualizationOutput, QueryRequest
 from app.services.pipeline import answer_question
 
 
@@ -41,7 +41,7 @@ async def run_repl() -> None:
 
         result = await Runner.run(agent, question)
         output = result.final_output
-        if isinstance(output, VisualizationSpec):
+        if isinstance(output, AgentVisualizationOutput):
             print(json.dumps(output.model_dump(), indent=2))
         else:
             print(output)

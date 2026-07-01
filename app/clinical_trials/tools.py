@@ -138,6 +138,7 @@ def count_trials_by_field(
         group_by=group_by,
         total_trials=len(trials),
         buckets=buckets,
+        trials=trials,
         search_description=_get_client().describe_search(
             condition=condition,
             intervention=intervention,
