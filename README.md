@@ -4,17 +4,71 @@ AI-powered backend that lets users ask questions about clinical trials in plain 
 
 ## How it works
 
-```
-User question → OpenAI Agents SDK agent → ClinicalTrials.gov tools → VisualizationSpec JSON
+The web UI posts questions to `POST /api/query`. The backend runs an OpenAI Agents SDK agent, post-processes the result, and returns a `QueryResponse` the frontend renders.
+
+```mermaid
+flowchart TD
+    subgraph UI["Browser"]
+        Form[Chat form / welcome examples]
+        Form -->|POST /api/query| API
+        API -->|QueryResponse| Panel[Chat + viz panel + follow-ups + trials table]
+    end
+
+    subgraph Backend["FastAPI pipeline"]
+        API[api.query_trials]
+        API --> AQ[answer_question]
+        AQ --> Agent[Visualization agent]
+        Agent -->|Runner.run| Tools
+
+        subgraph Tools["Agent tools"]
+            Search[search_clinical_trials]
+            Count[count_trials_by_field]
+            Get[get_clinical_trial]
+        end
+
+        Tools --> CTG[ClinicalTrials.gov API]
+        CTG --> Tools
+        Tools --> Agent
+
+        Agent --> Spec[VisualizationSpec]
+        Spec --> Enhance[enhance_visualization]
+        Enhance -->|list request| Keep1[Keep agent spec]
+        Enhance -->|AggregationResult| Auto[bar or pie from buckets]
+        Enhance -->|breakdown + table trials| Rebuild[Rebuild chart from trials]
+        Enhance -->|else| Keep2[Keep agent spec]
+
+        Agent --> Extract[_extract_trials_from_run]
+        Keep1 --> Response[QueryResponse]
+        Auto --> Response
+        Rebuild --> Response
+        Keep2 --> Response
+        Extract --> Response
+    end
+
+    Response --> Panel
+    Panel --> Render[render.js: chart + table + meta]
 ```
 
-The agent has three tools:
+### Agent tools
 
 - **search_clinical_trials** — search and list trials with filters (condition, intervention, sponsor, status, phase)
 - **get_clinical_trial** — fetch a single trial by NCT ID
-- **count_trials_by_field** — aggregate trial counts by status, phase, sponsor, condition, or study type
+- **count_trials_by_field** — aggregate trial counts by status, phase, sponsor, condition, or study type (preferred for bar/pie charts)
 
-The agent returns a `VisualizationSpec` with chart type, data rows, axis encoding, summary text, and metadata.
+The agent returns a `VisualizationSpec` with chart type, data rows, axis encoding, summary text, follow-up questions, and metadata. `pipeline.py` then runs `enhance_visualization` to correct chart types when needed and `_extract_trials_from_run` to attach a sample of underlying trial rows.
+
+### Chart type selection
+
+Chart type is chosen in two stages:
+
+1. **Agent** — follows prompt rules (bar for counts/comparisons, pie for ≤6 categories, table only for explicit list requests, etc.)
+2. **Post-processing** (`enhance_visualization`) — evaluated in order:
+   - List-style questions → keep the agent's choice
+   - `AggregationResult` from `count_trials_by_field` → force bar or pie (pie if ≤6 buckets, else bar)
+   - Breakdown question + table-shaped trial data → rebuild chart from trial rows
+   - Otherwise → keep the agent's choice
+
+The frontend does not select chart type; it renders whatever `chart_type` is in the response.
 
 ## Setup
 
@@ -80,6 +134,10 @@ python main.py --repl
     "encoding": {"x": "phase", "y": "count"},
     "meta": {"total_trials": 50, "search_description": "condition='diabetes'; status=RECRUITING"}
   },
+  "follow_questions": [
+    "How many of these trials are in phase 3?",
+    "Show recruiting trials for the same condition"
+  ],
   "trials": []
 }
 ```
