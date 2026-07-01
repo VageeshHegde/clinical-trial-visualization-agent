@@ -1,0 +1,17 @@
+[project]
+name = "clinical-trial-visualization-agent"
+version = "0.1.0"
+description = "AI backend that answers clinical trial questions and returns visualization specs"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "jinja2>=3.1.0",
+    "openai-agents>=0.17.7",
+    "pydantic-settings>=2.6.0",
+    "requests>=2.32.0",
+    "uvicorn[standard]>=0.32.0",
+]
+
+[project.scripts]
+clinical-trials-agent = "main:main"

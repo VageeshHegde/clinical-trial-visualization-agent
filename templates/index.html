@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Clinical Trial Explorer{% endblock %}
+
+{% block content %}
+<div class="workspace">
+  <section class="viz-panel" aria-label="Filters and visualizations">
+    <div class="card filters-card" id="filters-card">
+      <div class="chart-header">
+        <h3>Active filters</h3>
+        <span class="chart-type-badge" id="filter-badge">No query yet</span>
+      </div>
+      <dl class="meta-list" id="filters-meta">
+        <div>
+          <dt>Status</dt>
+          <dd>Ask a question to populate filters</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="viz-content" id="viz-content">
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="viz-heading">
+            <h2 id="viz-title" class="viz-title">Visualization</h2>
+            <p class="viz-subtitle" id="viz-subtitle">
+              Charts appear here. Use the chat on the right to explore clinical trial data.
+            </p>
+          </div>
+          <span class="chart-type-badge" id="viz-chart-type" hidden></span>
+        </div>
+        <div id="chart-root" class="chart-root" aria-live="polite"></div>
+        <canvas id="chart-canvas" class="chart-canvas" hidden></canvas>
+      </div>
+
+      <div class="card trials-card" id="trials-card" hidden>
+        <h3>Sample trials</h3>
+        <div class="table-wrap">
+          <table class="data-table" id="trials-table">
+            <thead>
+              <tr>
+                <th>NCT ID</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Phase</th>
+                <th>Sponsor</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="chat-panel card" aria-label="Chat">
+    <div class="chat-panel-header">
+      <h2>Chat</h2>
+      <p class="hint">Ask in plain English</p>
+    </div>
+
+    <div class="chat-messages" id="chat-messages" role="log" aria-live="polite">
+      <div class="message message-assistant">
+        <div class="message-bubble welcome-message">
+          <p>
+            I'm a clinical trials agent. I can search ClinicalTrials.gov, summarize results,
+            build bar and pie charts, list individual trials, and look up studies by NCT ID.
+          </p>
+          <p><strong>You can ask questions like:</strong></p>
+          <ul class="welcome-examples">
+            <li>
+              <button type="button" class="welcome-example">
+                Show recruiting lung cancer trials by phase
+              </button>
+            </li>
+            <li>
+              <button type="button" class="welcome-example">
+                How many diabetes trials are in phase 3?
+              </button>
+            </li>
+            <li>
+              <button type="button" class="welcome-example">
+                List recruiting immunotherapy trials with NCT IDs
+              </button>
+            </li>
+            <li>
+              <button type="button" class="welcome-example">
+                Break down breast cancer trials by sponsor
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <form class="chat-composer" id="chat-form">
+      <label class="sr-only" for="chat-input">Your question</label>
+      <div class="chat-input-row">
+        <textarea
+          id="chat-input"
+          rows="1"
+          placeholder="Ask a question…"
+          required
+        ></textarea>
+        <button
+          type="submit"
+          class="btn btn-primary btn-send"
+          id="chat-submit"
+          aria-label="Send message"
+        >
+          <i class="fa-solid fa-paper-plane" id="chat-submit-icon" aria-hidden="true"></i>
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
