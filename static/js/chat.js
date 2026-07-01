@@ -16,6 +16,21 @@ function formatMetaValue(value) {
   return String(value);
 }
 
+function formatApiError(payload) {
+  const detail = payload?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        const message = item?.msg || "Invalid request.";
+        return message.replace(/^Value error,\s*/i, "");
+      })
+      .join(" ");
+  }
+  return "Request failed.";
+}
+
 function updateFiltersPanel(result) {
   const badge = document.getElementById("filter-badge");
   const metaList = document.getElementById("filters-meta");
@@ -75,6 +90,9 @@ function updateVisualizationPanel(result) {
 
 window.VisualizationPanel = { updateVisualizationPanel };
 
+const SPINNER_ICON_CLASS = "fa-solid fa-spinner fa-spin";
+const SEND_ICON_CLASS = "fa-solid fa-paper-plane";
+
 document.addEventListener("DOMContentLoaded", () => {
   const chatForm = document.getElementById("chat-form");
   const chatInput = document.getElementById("chat-input");
@@ -84,20 +102,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!chatForm || !chatInput || !chatMessages) return;
 
-  document.querySelectorAll(".welcome-example").forEach((button) => {
-    button.addEventListener("click", () => {
-      chatInput.value = button.textContent.trim();
-      chatInput.focus();
-    });
+  chatMessages.addEventListener("click", (event) => {
+    const chip = event.target.closest(".follow-up-chip");
+    if (!chip) return;
+    chatInput.value = chip.textContent.trim();
+    chatInput.focus();
   });
 
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;
     chatInput.disabled = isLoading;
     if (submitIcon) {
-      submitIcon.className = isLoading
-        ? "fa-solid fa-spinner fa-spin"
-        : "fa-solid fa-paper-plane";
+      submitIcon.className = isLoading ? SPINNER_ICON_CLASS : SEND_ICON_CLASS;
     }
   }
 
@@ -105,6 +121,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrapper = document.createElement("div");
     wrapper.className = `message message-${role} ${extraClass}`.trim();
     wrapper.innerHTML = `<div class="message-bubble">${escapeHtml(text)}</div>`;
+    chatMessages.appendChild(wrapper);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return wrapper;
+  }
+
+  function appendLoadingMessage(text = "Searching ClinicalTrials.gov…") {
+    const wrapper = document.createElement("div");
+    wrapper.className = "message message-assistant message-loading";
+    wrapper.innerHTML = `
+      <div class="message-bubble">
+        <i class="${SPINNER_ICON_CLASS}" aria-hidden="true"></i>
+        <span>${escapeHtml(text)}</span>
+      </div>
+    `;
     chatMessages.appendChild(wrapper);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     return wrapper;
@@ -123,10 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
       chip.type = "button";
       chip.className = "follow-up-chip";
       chip.textContent = question;
-      chip.addEventListener("click", () => {
-        chatInput.value = question;
-        chatInput.focus();
-      });
       list.appendChild(chip);
     });
 
@@ -144,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     chatInput.value = "";
     setLoading(true);
 
-    const thinking = appendMessage("assistant", "Searching ClinicalTrials.gov…", "message-loading");
+    const thinking = appendLoadingMessage();
 
     try {
       const response = await fetch("/api/query", {
@@ -157,8 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
       thinking.remove();
 
       if (!response.ok) {
-        const detail = payload?.detail || "Request failed.";
-        appendMessage("assistant", detail, "message-error");
+        appendMessage("assistant", formatApiError(payload), "message-error");
         return;
       }
 

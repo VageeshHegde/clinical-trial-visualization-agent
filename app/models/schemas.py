@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+
+from app.validation.clinical_question import OFF_TOPIC_QUESTION_MESSAGE, is_off_topic_question
 
 
 class ChartType(str, Enum):
@@ -72,7 +74,33 @@ class TrialSummary(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    question: str = Field(min_length=1, description="Natural-language question about clinical trials")
+    """API/CLI input: a single clinical-trials question string."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    question: Annotated[
+        StrictStr,
+        Field(
+            min_length=1,
+            max_length=2000,
+            description="Natural-language question about clinical trials",
+            examples=["How many recruiting diabetes trials are in phase 3?"],
+        ),
+    ]
+
+    @field_validator("question", mode="before")
+    @classmethod
+    def question_must_be_string(cls, value: object) -> object:
+        if isinstance(value, bool) or not isinstance(value, str):
+            raise ValueError("question must be a string")
+        return value
+
+    @field_validator("question")
+    @classmethod
+    def question_must_be_clinical_trials(cls, value: str) -> str:
+        if is_off_topic_question(value):
+            raise ValueError(OFF_TOPIC_QUESTION_MESSAGE)
+        return value
 
 
 class QueryResponse(BaseModel):

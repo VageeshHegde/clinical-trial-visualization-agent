@@ -58,10 +58,30 @@ a {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  line-height: 1;
   font-weight: 700;
   font-size: 1.1rem;
   text-decoration: none;
   color: var(--text);
+}
+
+.brand span {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  line-height: 1.2;
+}
+
+.brand-logo {
+  display: block;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .badge {
@@ -330,9 +350,44 @@ main {
 
 .site-footer {
   border-top: 1px solid var(--border);
-  padding: 1.25rem 0 2rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.footer-text {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.footer-text a,
+.footer-links a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.footer-text a:hover,
+.footer-links a:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .site-footer p {
@@ -380,7 +435,7 @@ main {
 .app-main {
   flex: 1;
   min-height: 0;
-  padding: 0 1rem 1rem;
+  padding: 1rem;
 }
 
 .workspace {
@@ -485,29 +540,7 @@ main {
 }
 
 .welcome-examples {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.welcome-example {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  font-size: 0.92rem;
-  color: var(--primary);
-  text-align: left;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.welcome-example:hover {
-  color: var(--primary-hover);
+  margin-top: 0.35rem;
 }
 
 .message-error .message-bubble {
@@ -517,8 +550,15 @@ main {
 }
 
 .message-loading .message-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   color: var(--muted);
-  font-style: italic;
+}
+
+.message-loading .message-bubble .fa-spinner {
+  font-size: 0.9rem;
+  flex-shrink: 0;
 }
 
 .follow-up-list {
@@ -621,5 +661,10 @@ main {
 @media (max-width: 640px) {
   .card {
     padding: 1rem;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

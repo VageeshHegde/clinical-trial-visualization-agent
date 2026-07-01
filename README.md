@@ -2,6 +2,20 @@
 
 AI-powered backend that lets users ask questions about clinical trials in plain English. The system interprets intent, queries [ClinicalTrials.gov](https://clinicaltrials.gov/), analyzes results, and returns a structured visualization specification for a frontend to render.
 
+**Live demo:** [https://clinical-trial-visualization-agent-chi.vercel.app/](https://clinical-trial-visualization-agent-chi.vercel.app/)  
+**API docs (Swagger):** [https://clinical-trial-visualization-agent-chi.vercel.app/docs](https://clinical-trial-visualization-agent-chi.vercel.app/docs)
+
+## Tech stack
+
+| Layer | Technologies |
+|-------|----------------|
+| **Backend** | Python 3.13, FastAPI, Uvicorn |
+| **AI / agent** | OpenAI Agents SDK — tool-calling agent with structured `VisualizationSpec` output |
+| **Data** | [ClinicalTrials.gov API v2](https://clinicaltrials.gov/data-api/api) |
+| **Validation** | Pydantic v2 (`QueryRequest`, response schemas, clinical-question guards) |
+| **Frontend** | Jinja2 templates, vanilla JavaScript, Chart.js, D3.js |
+| **Deploy** | Vercel (`app.api:app` via `[tool.vercel]` in `pyproject.toml`) |
+
 ## How it works
 
 The web UI posts questions to `POST /api/query`. The backend runs an OpenAI Agents SDK agent, post-processes the result, and returns a `QueryResponse` the frontend renders.
@@ -95,6 +109,10 @@ Configuration is loaded from `.env` via `app/config.py` (pydantic-settings). See
 
 ### Web UI
 
+**Deployed:** [https://clinical-trial-visualization-agent-chi.vercel.app/](https://clinical-trial-visualization-agent-chi.vercel.app/)
+
+**Local:**
+
 ```bash
 python main.py --serve
 ```
@@ -103,6 +121,21 @@ Open [http://localhost:8000](http://localhost:8000) in your browser. The Jinja f
 `VisualizationSpec` responses with **Chart.js** (bar, pie, line) and **D3.js** (grouped bar).
 
 ### HTTP API (JSON)
+
+**Swagger UI**
+
+- Deployed: [https://clinical-trial-visualization-agent-chi.vercel.app/docs](https://clinical-trial-visualization-agent-chi.vercel.app/docs)
+- Local: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+**Deployed:**
+
+```bash
+curl -X POST https://clinical-trial-visualization-agent-chi.vercel.app/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How many recruiting phase 3 lung cancer trials are there?"}'
+```
+
+**Local:**
 
 ```bash
 python main.py --serve
