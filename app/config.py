@@ -34,6 +34,11 @@ class Settings(BaseSettings):
         default="clinical-trial-visualization-agent/0.1",
         validation_alias="CLINICAL_TRIALS_USER_AGENT",
     )
+    aggregation_top_n: int = Field(
+        default=25,
+        validation_alias="AGGREGATION_TOP_N",
+        description="Max buckets returned to the agent for large breakdowns (sponsor, condition)",
+    )
 
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
     log_level: str = Field(default="INFO", validation_alias="LOG_LEVEL")
@@ -42,6 +47,11 @@ class Settings(BaseSettings):
     @classmethod
     def validate_page_size(cls, value: int) -> int:
         return min(max(value, 1), 1000)
+
+    @field_validator("aggregation_top_n")
+    @classmethod
+    def validate_aggregation_top_n(cls, value: int) -> int:
+        return min(max(value, 5), 100)
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -71,3 +81,9 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def reload_settings() -> Settings:
+    """Clear cached settings (e.g. after .env change) and reload."""
+    get_settings.cache_clear()
+    return get_settings()

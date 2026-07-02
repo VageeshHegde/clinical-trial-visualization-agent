@@ -143,6 +143,8 @@ function renderChartJs(viz, type) {
   canvas.hidden = false;
   destroyActiveChart();
 
+  const isCircular = type === "pie" || type === "doughnut";
+
   activeChart = new Chart(canvas, {
     type,
     data: {
@@ -162,12 +164,12 @@ function renderChartJs(viz, type) {
     options: {
       responsive: true,
       maintainAspectRatio: true,
+      cutout: type === "doughnut" ? "55%" : undefined,
       plugins: {
-        legend: { display: type === "pie" },
+        legend: { display: isCircular, position: "right" },
         title: { display: false },
       },
-      scales:
-        type === "pie"
+      scales: isCircular
           ? {}
           : {
               x: {
@@ -300,6 +302,9 @@ function renderVisualization(viz) {
       break;
     case "pie":
       renderChartJs(viz, "pie");
+      break;
+    case "donut":
+      renderChartJs(viz, "doughnut");
       break;
     case "line":
       renderChartJs(viz, "line");

@@ -106,8 +106,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const chip = event.target.closest(".follow-up-chip");
     if (!chip) return;
     chatInput.value = chip.textContent.trim();
+    resizeChatInput();
     chatInput.focus();
   });
+
+  function resizeChatInput() {
+    chatInput.style.height = "auto";
+    const maxHeight = parseFloat(getComputedStyle(chatInput).maxHeight) || Infinity;
+    const nextHeight = Math.min(chatInput.scrollHeight, maxHeight);
+    chatInput.style.height = `${nextHeight}px`;
+    chatInput.style.overflowY = chatInput.scrollHeight > maxHeight ? "auto" : "hidden";
+  }
 
   function setLoading(isLoading) {
     submitBtn.disabled = isLoading;
@@ -168,6 +177,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     appendMessage("user", question);
     chatInput.value = "";
+    resizeChatInput();
     setLoading(true);
 
     const thinking = appendLoadingMessage();
@@ -203,10 +213,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  chatInput.addEventListener("input", resizeChatInput);
+
   chatInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       chatForm.requestSubmit();
     }
   });
+
+  resizeChatInput();
 });

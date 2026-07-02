@@ -19,6 +19,8 @@ _GROUP_BY_PATTERNS: list[tuple[re.Pattern[str], GroupByField]] = [
     (re.compile(r"\bby\s+status", re.I), "status"),
     (re.compile(r"\bstatus\s+breakdown", re.I), "status"),
     (re.compile(r"\bby\s+sponsor", re.I), "sponsor"),
+    (re.compile(r"\bwhich\s+sponsors?\b", re.I), "sponsor"),
+    (re.compile(r"\bmost\s+sponsors?\b", re.I), "sponsor"),
     (re.compile(r"\bby\s+condition", re.I), "condition"),
     (re.compile(r"\bby\s+study\s+type", re.I), "study_type"),
 ]
@@ -30,6 +32,8 @@ _BREAKDOWN_PATTERNS = [
     re.compile(r"\bcompare\b", re.I),
     re.compile(r"\bby\s+\w+", re.I),
     re.compile(r"\bcount\b", re.I),
+    re.compile(r"\bwhich\s+sponsors?\b", re.I),
+    re.compile(r"\bmost\s+sponsors?\b", re.I),
 ]
 
 _LIST_PATTERNS = [
@@ -40,9 +44,23 @@ _LIST_PATTERNS = [
     re.compile(r"\bdetails?\b", re.I),
 ]
 
+_CHART_TYPE_PATTERNS: list[tuple[re.Pattern[str], ChartType]] = [
+    (re.compile(r"\bdonut(\s+chart)?\b|\bdoughnut(\s+chart)?\b", re.I), ChartType.DONUT),
+    (re.compile(r"\bpie(\s+chart)?\b", re.I), ChartType.PIE),
+    (re.compile(r"\bbar(\s+chart)?\b", re.I), ChartType.BAR),
+    (re.compile(r"\bline(\s+chart)?\b", re.I), ChartType.LINE),
+]
+
 
 def _asks_for_list(question: str) -> bool:
     return any(pattern.search(question) for pattern in _LIST_PATTERNS)
+
+
+def _preferred_chart_type(question: str) -> ChartType | None:
+    for pattern, chart_type in _CHART_TYPE_PATTERNS:
+        if pattern.search(question):
+            return chart_type
+    return None
 
 
 def _asks_for_breakdown(question: str) -> bool:
@@ -76,9 +94,10 @@ def build_chart_from_buckets(
     summary: str,
     meta: dict,
     total_trials: int,
+    preferred_chart_type: ChartType | None = None,
 ) -> VisualizationSpec:
     data = [{"label": label, "count": count} for label, count in buckets if count > 0]
-    chart_type = _choose_chart_type(len(data))
+    chart_type = preferred_chart_type or _choose_chart_type(len(data))
     group_label = _group_by_label(group_by)
 
     return VisualizationSpec(
@@ -101,15 +120,28 @@ def build_chart_from_buckets(
 def build_chart_from_aggregation(
     aggregation: AggregationResult,
     visualization: VisualizationSpec,
+    *,
+    preferred_chart_type: ChartType | None = None,
 ) -> VisualizationSpec:
     buckets = [(bucket.label, bucket.count) for bucket in aggregation.buckets]
+    meta = {
+        **visualization.meta,
+        "aggregation_source": aggregation.data_source,
+    }
+    if aggregation.buckets_capped:
+        meta["buckets_capped"] = True
+        meta["buckets_total"] = aggregation.buckets_total
+    chart_type = preferred_chart_type
+    if chart_type is None and visualization.chart_type in {ChartType.PIE, ChartType.DONUT}:
+        chart_type = visualization.chart_type
     return build_chart_from_buckets(
         aggregation.group_by,  # type: ignore[arg-type]
         buckets,
         title=visualization.title,
         summary=visualization.summary,
-        meta=visualization.meta,
+        meta=meta,
         total_trials=aggregation.total_trials,
+        preferred_chart_type=chart_type,
     )
 
 
@@ -128,6 +160,42 @@ def _collect_tool_outputs(result: object) -> list[object]:
     return outputs
 
 
+def _is_label_count_chart(visualization: VisualizationSpec) -> bool:
+    if not visualization.data:
+        return False
+    first_row = visualization.data[0]
+    return "label" in first_row and "count" in first_row
+
+
+def _as_aggregation_result(output: object) -> AggregationResult | None:
+    if isinstance(output, AggregationResult):
+        return output
+    if isinstance(output, dict):
+        try:
+            return AggregationResult.model_validate(output)
+        except Exception:
+            return None
+    return None
+
+
+def _apply_preferred_chart_type(
+    question: str,
+    visualization: VisualizationSpec,
+) -> VisualizationSpec:
+    preferred = _preferred_chart_type(question)
+    if not preferred or _asks_for_list(question):
+        return visualization
+    if visualization.chart_type == preferred:
+        return visualization
+    if _is_label_count_chart(visualization) or visualization.chart_type in {
+        ChartType.BAR,
+        ChartType.PIE,
+        ChartType.DONUT,
+    }:
+        return visualization.model_copy(update={"chart_type": preferred})
+    return visualization
+
+
 def _is_trial_row_table(visualization: VisualizationSpec) -> bool:
     if visualization.chart_type != ChartType.TABLE or not visualization.data:
         return False
@@ -143,19 +211,27 @@ def enhance_visualization(
     if _asks_for_list(question):
         return visualization
 
+    preferred = _preferred_chart_type(question)
+
     for output in _collect_tool_outputs(result):
-        if isinstance(output, AggregationResult) and output.buckets:
-            return build_chart_from_aggregation(output, visualization)
+        aggregation = _as_aggregation_result(output)
+        if aggregation and aggregation.buckets:
+            rebuilt = build_chart_from_aggregation(
+                aggregation,
+                visualization,
+                preferred_chart_type=preferred,
+            )
+            return _apply_preferred_chart_type(question, rebuilt)
 
     if not _asks_for_breakdown(question):
-        return visualization
+        return _apply_preferred_chart_type(question, visualization)
 
     group_by = _infer_group_by(question)
     if group_by is None:
-        return visualization
+        return _apply_preferred_chart_type(question, visualization)
 
     if visualization.chart_type != ChartType.TABLE and not _is_trial_row_table(visualization):
-        return visualization
+        return _apply_preferred_chart_type(question, visualization)
 
     trials: list[TrialSummary] = []
     for output in _collect_tool_outputs(result):
@@ -165,15 +241,17 @@ def enhance_visualization(
             trials.append(output)
 
     if not trials:
-        return visualization
+        return _apply_preferred_chart_type(question, visualization)
 
     buckets = _bucket_trials(trials, group_by)
     bucket_pairs = [(bucket.label, bucket.count) for bucket in buckets]
-    return build_chart_from_buckets(
+    rebuilt = build_chart_from_buckets(
         group_by,
         bucket_pairs,
         title=visualization.title,
         summary=visualization.summary,
         meta=visualization.meta,
         total_trials=len(trials),
+        preferred_chart_type=preferred,
     )
+    return _apply_preferred_chart_type(question, rebuilt)

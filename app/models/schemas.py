@@ -11,6 +11,7 @@ from app.validation.clinical_question import OFF_TOPIC_QUESTION_MESSAGE, is_off_
 class ChartType(str, Enum):
     BAR = "bar"
     PIE = "pie"
+    DONUT = "donut"
     LINE = "line"
     TABLE = "table"
     METRIC_CARDS = "metric_cards"
@@ -118,9 +119,22 @@ class QueryResponse(BaseModel):
 
 class TrialSearchResult(BaseModel):
     total_returned: int
+    total_count: int | None = Field(
+        default=None,
+        description="Total matching studies from ClinicalTrials.gov countTotal, when available",
+    )
     has_more: bool
     trials: list[TrialSummary]
     search_description: str
+
+
+class FilterOptionsResult(BaseModel):
+    status_values: list[str]
+    phase_values: list[str]
+    study_type_values: list[str]
+    search_areas: dict[str, str]
+    query_params: dict[str, str]
+    notes: str
 
 
 class AggregationBucket(BaseModel):
@@ -133,7 +147,19 @@ class AggregationResult(BaseModel):
     total_trials: int
     buckets: list[AggregationBucket]
     search_description: str
+    data_source: str = Field(
+        default="stats_api",
+        description="How counts were computed: stats_api, count_total, or full_scan",
+    )
+    buckets_capped: bool = Field(
+        default=False,
+        description="True when only the top N buckets were returned (remainder grouped as Other)",
+    )
+    buckets_total: int | None = Field(
+        default=None,
+        description="Total distinct bucket count before capping, when buckets_capped is true",
+    )
     trials: list[TrialSummary] = Field(
         default_factory=list,
-        description="Trial records sampled from the search that produced the aggregation",
+        description="Optional trial records for traceability; usually empty for exact aggregations",
     )

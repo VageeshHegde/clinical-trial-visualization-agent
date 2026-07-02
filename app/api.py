@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
+from app.errors import TOKEN_RATE_LIMIT_MESSAGE, is_token_rate_limit_error
 from app.models.schemas import QueryRequest, QueryResponse
 from app.routes.web import router as web_router
 from app.services.pipeline import answer_question
@@ -58,6 +59,9 @@ async def query_trials(request: QueryRequest) -> QueryResponse:
     try:
         return await answer_question(request)
     except ValueError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        status_code = 429 if str(exc) == TOKEN_RATE_LIMIT_MESSAGE else 503
+        raise HTTPException(status_code=status_code, detail=str(exc)) from exc
     except Exception as exc:
+        if is_token_rate_limit_error(exc):
+            raise HTTPException(status_code=429, detail=TOKEN_RATE_LIMIT_MESSAGE) from exc
         raise HTTPException(status_code=500, detail=str(exc)) from exc

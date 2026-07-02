@@ -4,6 +4,7 @@ from agents import Runner
 
 from app.agent.visualization import create_visualization_agent
 from app.config import get_settings
+from app.errors import TOKEN_RATE_LIMIT_MESSAGE, is_token_rate_limit_error
 from app.models.schemas import (
     AgentVisualizationOutput,
     QueryRequest,
@@ -19,7 +20,12 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     settings.require_openai_api_key()
 
     agent = create_visualization_agent(settings)
-    result = await Runner.run(agent, request.question)
+    try:
+        result = await Runner.run(agent, request.question)
+    except Exception as exc:
+        if is_token_rate_limit_error(exc):
+            raise ValueError(TOKEN_RATE_LIMIT_MESSAGE) from exc
+        raise
 
     agent_output = result.final_output
     if not isinstance(agent_output, AgentVisualizationOutput):
