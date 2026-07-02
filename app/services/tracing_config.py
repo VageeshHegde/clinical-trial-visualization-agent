@@ -10,7 +10,7 @@ from app.models.schemas import ChatMessage
 
 WORKFLOW_QUERY = "Clinical trial query"
 WORKFLOW_AGENT = "Visualization agent"
-TOOL_NAMESPACE = "ClinicalTrials.gov"
+TOOL_NAMESPACE = "clinical_trials"
 
 
 def build_trace_group_id(question: str, history: list[ChatMessage] | None = None) -> str:
