@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4.1", validation_alias="OPENAI_MODEL")
+    openai_model: str = Field(default="gpt-4.1-mini", validation_alias="OPENAI_MODEL")
 
     api_host: str = Field(default="0.0.0.0", validation_alias="API_HOST")
     api_port: int = Field(default=8000, validation_alias="API_PORT")
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         validation_alias="CLINICAL_TRIALS_USER_AGENT",
     )
     aggregation_top_n: int = Field(
-        default=25,
+        default=15,
         validation_alias="AGGREGATION_TOP_N",
         description=(
             "Central agent/API limit (from .env): max aggregation buckets, trial list "
@@ -54,10 +54,30 @@ class Settings(BaseSettings):
     )
     aggregation_top_n_min: int = Field(default=5, validation_alias="AGGREGATION_TOP_N_MIN")
     aggregation_top_n_max: int = Field(default=100, validation_alias="AGGREGATION_TOP_N_MAX")
+    agent_tool_max_trials: int = Field(
+        default=10,
+        validation_alias="AGENT_TOOL_MAX_TRIALS",
+        description="Max trial rows returned in search_clinical_trials tool output (TPM guard)",
+    )
+    agent_tool_max_title_chars: int = Field(
+        default=120,
+        validation_alias="AGENT_TOOL_MAX_TITLE_CHARS",
+        description="Truncate trial titles in tool output to this length",
+    )
+    agent_tool_max_conditions: int = Field(
+        default=2,
+        validation_alias="AGENT_TOOL_MAX_CONDITIONS",
+        description="Max condition strings per trial in tool output",
+    )
     chart_pie_max_buckets: int = Field(
         default=6,
         validation_alias="CHART_PIE_MAX_BUCKETS",
         description="Use pie/donut instead of bar when bucket count is at most this value",
+    )
+    chat_context_max_messages: int = Field(
+        default=6,
+        validation_alias="CHAT_CONTEXT_MAX_MESSAGES",
+        description="Max prior chat messages sent to the agent for multi-turn context (0 disables)",
     )
 
     environment: str = Field(default="development", validation_alias="ENVIRONMENT")
@@ -83,6 +103,26 @@ class Settings(BaseSettings):
     @classmethod
     def validate_chart_pie_max_buckets(cls, value: int) -> int:
         return min(max(value, 2), 20)
+
+    @field_validator("chat_context_max_messages")
+    @classmethod
+    def validate_chat_context_max_messages(cls, value: int) -> int:
+        return min(max(value, 0), 50)
+
+    @field_validator("agent_tool_max_trials")
+    @classmethod
+    def validate_agent_tool_max_trials(cls, value: int) -> int:
+        return min(max(value, 1), 25)
+
+    @field_validator("agent_tool_max_title_chars")
+    @classmethod
+    def validate_agent_tool_max_title_chars(cls, value: int) -> int:
+        return min(max(value, 40), 300)
+
+    @field_validator("agent_tool_max_conditions")
+    @classmethod
+    def validate_agent_tool_max_conditions(cls, value: int) -> int:
+        return min(max(value, 1), 5)
 
     @model_validator(mode="after")
     def clamp_aggregation_top_n(self) -> Settings:
@@ -117,6 +157,10 @@ class Settings(BaseSettings):
         """Default and cap for trials/buckets exposed to the agent (AGGREGATION_TOP_N)."""
         requested = page_size if page_size is not None else self.aggregation_top_n
         return min(max(requested, 1), self.aggregation_top_n)
+
+    def clamp_tool_trial_limit(self, page_size: int | None = None) -> int:
+        """Stricter cap on trials serialised in tool results to reduce TPM usage."""
+        return min(self.clamp_agent_trial_limit(page_size), self.agent_tool_max_trials)
 
     def venv_python(self, project_root: Path) -> Path:
         if sys.platform == "win32":

@@ -106,14 +106,18 @@ Configuration is loaded from `.env` via `app/config.py` (pydantic-settings). See
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `OPENAI_API_KEY` | OpenAI API key (required for queries) | — |
-| `OPENAI_MODEL` | Model passed to the agent | `gpt-4.1` |
+| `OPENAI_MODEL` | Model passed to the agent | `gpt-4.1-mini` |
 | `API_HOST` / `API_PORT` | Server bind address | `0.0.0.0` / `8000` |
 | `CORS_ORIGINS` | Comma-separated origins, or `*` | `*` |
 | `ENVIRONMENT` | `development` enables reload and requires `.venv` for `main.py` | `development` |
 | `VENV_DIR` | Project virtualenv directory | `.venv` |
-| `AGGREGATION_TOP_N` | Max buckets, trial list size, and chart trial samples | `25` |
+| `AGGREGATION_TOP_N` | Max buckets and chart trial samples in API responses | `15` |
 | `AGGREGATION_TOP_N_MIN` / `MAX` | Allowed range for `AGGREGATION_TOP_N` | `5` / `100` |
+| `AGENT_TOOL_MAX_TRIALS` | Max trial rows returned in agent tool output (TPM guard) | `10` |
+| `AGENT_TOOL_MAX_TITLE_CHARS` | Truncate trial titles in tool output | `120` |
+| `AGENT_TOOL_MAX_CONDITIONS` | Max conditions per trial in tool output | `2` |
 | `CHART_PIE_MAX_BUCKETS` | Use pie/donut instead of bar when bucket count ≤ this | `6` |
+| `CHAT_CONTEXT_MAX_MESSAGES` | Prior chat messages sent to the agent per request (`0` = disabled) | `6` |
 | `CLINICAL_TRIALS_BASE_URL` | ClinicalTrials.gov API base URL | see `.env.example` |
 | `CLINICAL_TRIALS_TIMEOUT` | HTTP timeout (seconds) | `30` |
 | `CLINICAL_TRIALS_MAX_PAGE_SIZE` | Upper bound for API `pageSize` | `200` |
@@ -170,12 +174,60 @@ curl -X POST http://localhost:8000/api/query \
   -d '{"question": "How many recruiting phase 3 lung cancer trials are there?"}'
 ```
 
+**Multi-turn context:** the web UI sends prior turns in `history`. Each item is `{ "role": "user" | "assistant", "content": "..." }`. The server keeps the last `CHAT_CONTEXT_MAX_MESSAGES` entries (assistant text is the summary, not full chart JSON).
+
+```bash
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "Break that down by sponsor",
+    "history": [
+      {"role": "user", "content": "How many recruiting lung cancer trials are there by phase?"},
+      {"role": "assistant", "content": "There are 412 recruiting lung cancer trials across five phase categories."}
+    ]
+  }'
+```
+
 ### CLI
 
 ```bash
 python main.py "Show recruiting diabetes trials by phase"
 python main.py --repl
 ```
+
+## Evaluation
+
+This project uses a lightweight evaluation setup (no OpenAI Evals SDK required) that covers both **software correctness** and **expected visualization behavior**:
+
+| Piece | Location | What it checks |
+|-------|----------|----------------|
+| Eval dataset | `evaluation/dataset.json` | 27 representative queries (breakdowns, explicit chart types, lists, network, time series, off-topic, follow-ups) |
+| Response fixtures | `evaluation/fixtures/` | Sample `QueryResponse` / `AgentVisualizationOutput` JSON for schema validation |
+| Schema tests | `tests/test_schemas.py` | Pydantic validation for requests, specs, and fixtures |
+| Guard tests | `tests/test_clinical_validation.py` | Off-topic rejection and clinical follow-up rules |
+| Chart-type tests | `tests/test_chart_type.py` | Deterministic assertions on post-processing chart selection |
+
+Deterministic tests exercise `enhance_visualization` with mocked aggregation/trial data so CI does not call OpenAI or ClinicalTrials.gov. Optional live agent checks are marked `integration` and skipped unless you opt in.
+
+```bash
+# Install dev dependencies
+uv sync --group dev
+
+# Deterministic eval suite (fast, no API keys)
+uv run pytest
+
+# Include live agent smoke tests (requires OPENAI_API_KEY)
+uv run pytest --run-integration
+
+# Generate a local HTML report (same format as CI)
+uv run pytest --html=pytest-report/report.html --self-contained-html
+```
+
+### CI
+
+GitHub Actions runs the deterministic pytest suite on every push/PR to `main` (see `.github/workflows/test.yml`). The workflow uploads a self-contained HTML report as a workflow artifact named `pytest-report` — download it from the Actions run summary.
+
+To extend the eval set, add a case to `evaluation/dataset.json` with `expect` fields such as `preferred_chart_type`, `asks_for_list`, or `enhanced_chart_type_with_aggregation`.
 
 ## Response shape
 

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 TOKEN_RATE_LIMIT_MESSAGE = (
-    "OpenAI token rate limit exceeded (TPM). This request needed more tokens than your "
-    "organization allows per minute (often ~30k on gpt-4.1). Common causes: listing too "
-    "many trials at once, broad sponsor/condition breakdowns, or retrying too quickly. "
-    "Try a narrower question (add condition, status, phase, or year filters), avoid "
-    "large trial lists, set OPENAI_MODEL=gpt-4.1-mini in .env, or wait about a minute "
-    "and retry. Trial lists and chart samples are capped by AGGREGATION_TOP_N in .env."
+    "OpenAI token rate limit exceeded (TPM). This request used more tokens than your "
+    "organization allows per minute. Common causes: multiple tool calls, long chat history, "
+    "or listing too many trials. Try a narrower question (add condition, status, phase, or "
+    "year filters), avoid trial lists unless needed, lower AGGREGATION_TOP_N or "
+    "AGENT_TOOL_MAX_TRIALS in .env, set OPENAI_MODEL=gpt-4.1-mini, reduce "
+    "CHAT_CONTEXT_MAX_MESSAGES, or wait about a minute and retry."
 )
 
 

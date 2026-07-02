@@ -92,6 +92,7 @@ window.VisualizationPanel = { updateVisualizationPanel };
 
 const SPINNER_ICON_CLASS = "fa-solid fa-spinner fa-spin";
 const SEND_ICON_CLASS = "fa-solid fa-paper-plane";
+const CHAT_CONTEXT_MAX_MESSAGES = 10;
 
 document.addEventListener("DOMContentLoaded", () => {
   const chatForm = document.getElementById("chat-form");
@@ -101,6 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const submitIcon = document.getElementById("chat-submit-icon");
 
   if (!chatForm || !chatInput || !chatMessages) return;
+
+  let conversationHistory = [];
 
   chatMessages.addEventListener("click", (event) => {
     const chip = event.target.closest(".follow-up-chip");
@@ -186,7 +189,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({
+          question,
+          history: conversationHistory.slice(-CHAT_CONTEXT_MAX_MESSAGES),
+        }),
       });
 
       const payload = await response.json();
@@ -197,7 +203,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      appendMessage("assistant", payload.visualization?.summary || "Here are the results.");
+      const summary = payload.visualization?.summary || "Here are the results.";
+      conversationHistory.push({ role: "user", content: question });
+      conversationHistory.push({ role: "assistant", content: summary });
+      if (conversationHistory.length > CHAT_CONTEXT_MAX_MESSAGES * 2) {
+        conversationHistory = conversationHistory.slice(-CHAT_CONTEXT_MAX_MESSAGES * 2);
+      }
+
+      appendMessage("assistant", summary);
       appendFollowUpQuestions(payload.follow_questions);
       window.VisualizationPanel?.updateVisualizationPanel(payload);
     } catch (error) {

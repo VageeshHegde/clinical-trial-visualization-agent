@@ -1,9 +1,11 @@
 .env
 .venv/
+pytest-report/
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+pytest-report/
 .ruff_cache/
 .mypy_cache/
 dist/

@@ -34,6 +34,16 @@ GENERAL_KNOWLEDGE_PATTERN = re.compile(
     re.I,
 )
 
+FOLLOW_UP_PATTERN = re.compile(
+    r"\b("
+    r"that|those|same|it|them|this|previous|earlier|above|"
+    r"break\s+(it|that)\s+down|as\s+a\s+(pie|bar|donut|line|table|network)|"
+    r"show\s+(me\s+)?(that|them)|what\s+about|how\s+about|"
+    r"instead|also|now|by\s+sponsor|by\s+phase|by\s+status|per\s+year|over\s+time"
+    r")\b",
+    re.I,
+)
+
 OFF_TOPIC_QUESTION_MESSAGE = (
     "question must be about clinical trials on ClinicalTrials.gov "
     "(e.g. trial counts, phases, sponsors, recruiting studies, or an NCT ID)"
@@ -64,3 +74,17 @@ def is_off_topic_question(question: str) -> bool:
     if len(text.split()) <= 4:
         return False
     return True
+
+
+def is_clinical_follow_up(question: str, prior_messages: list[str]) -> bool:
+    """Allow short contextual follow-ups when prior turns were about clinical trials."""
+    text = question.strip()
+    if not text or not prior_messages:
+        return False
+    if is_math_question(text) or CHITCHAT_PATTERN.match(text):
+        return False
+    if GENERAL_KNOWLEDGE_PATTERN.search(text):
+        return False
+    if not any(has_clinical_signal(message) for message in prior_messages):
+        return False
+    return bool(FOLLOW_UP_PATTERN.search(text) or len(text.split()) <= 12)

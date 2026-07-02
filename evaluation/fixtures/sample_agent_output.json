@@ -1,0 +1,17 @@
+{
+  "visualization": {
+    "chart_type": "metric_cards",
+    "title": "Recruiting Phase 3 Lung Cancer Trials",
+    "summary": "ClinicalTrials.gov reports 87 matching recruiting phase 3 lung cancer trials.",
+    "data": [{"label": "Total trials", "count": 87}],
+    "encoding": {"x": "label", "y": "count"},
+    "meta": {
+      "total_trials": 87,
+      "search_description": "condition='lung cancer'; status=RECRUITING; phase=PHASE3"
+    }
+  },
+  "follow_questions": [
+    "Break these down by sponsor",
+    "Show a table of individual trials"
+  ]
+}

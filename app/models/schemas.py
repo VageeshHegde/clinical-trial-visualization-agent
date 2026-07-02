@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator, model_validator
 
-from app.validation.clinical_question import OFF_TOPIC_QUESTION_MESSAGE, is_off_topic_question
+from app.validation.clinical_question import (
+    OFF_TOPIC_QUESTION_MESSAGE,
+    is_clinical_follow_up,
+    is_off_topic_question,
+)
 
 
 class ChartType(str, Enum):
@@ -33,6 +37,23 @@ class ChartEncoding(BaseModel):
     value: str | None = Field(default=None, description="Data field for numeric values")
 
 
+def _default_visualization_summary(data: dict[str, Any]) -> str:
+    title = str(data.get("title") or "Clinical trial results")
+    meta = data.get("meta") if isinstance(data.get("meta"), dict) else {}
+    total = meta.get("total_trials")
+    rows = data.get("data")
+    row_count = len(rows) if isinstance(rows, list) else 0
+
+    if total is not None:
+        suffix = f"; showing {row_count} in this view." if row_count else "."
+        return f"{title}. ClinicalTrials.gov reports {int(total):,} matching trials{suffix}"
+
+    if row_count:
+        return f"{title}. Showing {row_count} trial(s) from the search."
+
+    return title
+
+
 class VisualizationSpec(BaseModel):
     """Structured chart specification for frontend rendering."""
 
@@ -52,6 +73,16 @@ class VisualizationSpec(BaseModel):
         default_factory=dict,
         description="Query context: filters applied, total trials, data source, etc.",
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_summary(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        summary = data.get("summary")
+        if summary is None or (isinstance(summary, str) and not summary.strip()):
+            data["summary"] = _default_visualization_summary(data)
+        return data
 
 
 class AgentVisualizationOutput(BaseModel):
@@ -76,8 +107,24 @@ class TrialSummary(BaseModel):
     start_date: str | None = None
 
 
+class ChatMessage(BaseModel):
+    """One turn in the chat transcript sent for multi-turn context."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    role: Literal["user", "assistant"]
+    content: Annotated[
+        StrictStr,
+        Field(
+            min_length=1,
+            max_length=4000,
+            description="Message text (assistant summaries, not full chart JSON)",
+        ),
+    ]
+
+
 class QueryRequest(BaseModel):
-    """API/CLI input: a single clinical-trials question string."""
+    """API/CLI input: current question plus optional prior chat turns."""
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -90,6 +137,10 @@ class QueryRequest(BaseModel):
             examples=["How many recruiting diabetes trials are in phase 3?"],
         ),
     ]
+    history: list[ChatMessage] = Field(
+        default_factory=list,
+        description="Prior user/assistant messages; server keeps the last CHAT_CONTEXT_MAX_MESSAGES",
+    )
 
     @field_validator("question", mode="before")
     @classmethod
@@ -98,12 +149,14 @@ class QueryRequest(BaseModel):
             raise ValueError("question must be a string")
         return value
 
-    @field_validator("question")
-    @classmethod
-    def question_must_be_clinical_trials(cls, value: str) -> str:
-        if is_off_topic_question(value):
-            raise ValueError(OFF_TOPIC_QUESTION_MESSAGE)
-        return value
+    @model_validator(mode="after")
+    def question_must_be_clinical_trials(self) -> QueryRequest:
+        if not is_off_topic_question(self.question):
+            return self
+        prior = [message.content for message in self.history]
+        if is_clinical_follow_up(self.question, prior):
+            return self
+        raise ValueError(OFF_TOPIC_QUESTION_MESSAGE)
 
 
 class QueryResponse(BaseModel):
@@ -134,8 +187,8 @@ class FilterOptionsResult(BaseModel):
     status_values: list[str]
     phase_values: list[str]
     study_type_values: list[str]
-    search_areas: dict[str, str]
-    query_params: dict[str, str]
+    search_areas: dict[str, str] = Field(default_factory=dict)
+    query_params: dict[str, str] = Field(default_factory=dict)
     notes: str
 
 

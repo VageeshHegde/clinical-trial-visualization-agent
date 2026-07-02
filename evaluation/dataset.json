@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "description": "Representative clinical-trial queries for schema validation and deterministic chart-type checks.",
+  "cases": [
+    {
+      "id": "breakdown_phase_diabetes",
+      "question": "How many recruiting diabetes trials are there by phase?",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "breakdown_status_lung",
+      "question": "Show the status breakdown for lung cancer trials",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "explicit_pie",
+      "question": "Show recruiting breast cancer trials by phase as a pie chart",
+      "category": "explicit_chart",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "pie",
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "pie"
+      }
+    },
+    {
+      "id": "explicit_donut",
+      "question": "Give me a donut chart of phase 3 oncology trials by sponsor",
+      "category": "explicit_chart",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "donut",
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "donut"
+      }
+    },
+    {
+      "id": "explicit_bar",
+      "question": "Create a bar chart of completed Alzheimer's trials by study type",
+      "category": "explicit_chart",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "bar",
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "explicit_line",
+      "question": "Plot a line chart of melanoma trials by status",
+      "category": "explicit_chart",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "line",
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "line"
+      }
+    },
+    {
+      "id": "list_trials",
+      "question": "List recruiting Parkinson's disease trials with NCT IDs",
+      "category": "list",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": false,
+        "asks_for_list": true
+      }
+    },
+    {
+      "id": "table_trials",
+      "question": "Show a table of phase 2 heart failure trials",
+      "category": "list",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": false,
+        "asks_for_list": true
+      }
+    },
+    {
+      "id": "network_sponsor_condition",
+      "question": "Show a network graph of sponsors and conditions for recruiting diabetes trials",
+      "category": "network",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "network",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_trials": "network"
+      }
+    },
+    {
+      "id": "network_relationship_map",
+      "question": "Build a relationship map linking sponsors to conditions in obesity studies",
+      "category": "network",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "network",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_trials": "network"
+      }
+    },
+    {
+      "id": "timeseries_by_year",
+      "question": "Show a time series of lung cancer trials started per year",
+      "category": "timeseries",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "timeseries",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_trials": "timeseries"
+      }
+    },
+    {
+      "id": "timeseries_trend",
+      "question": "What is the trend over time for new multiple sclerosis trials?",
+      "category": "timeseries",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "timeseries",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_trials": "timeseries"
+      }
+    },
+    {
+      "id": "count_single",
+      "question": "How many active not recruiting COVID-19 vaccine trials are there?",
+      "category": "count",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false
+      }
+    },
+    {
+      "id": "by_sponsor",
+      "question": "Which sponsors run the most rheumatoid arthritis trials?",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "by_condition",
+      "question": "Compare trial counts by condition for immunotherapy studies",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "nct_lookup",
+      "question": "What is the status of trial NCT04380701?",
+      "category": "lookup",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": false,
+        "asks_for_list": false
+      }
+    },
+    {
+      "id": "study_type_breakdown",
+      "question": "How many interventional vs observational asthma trials are there?",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "recruiting_filter",
+      "question": "Count recruiting hepatitis C trials by phase",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "phase3_filter",
+      "question": "How many phase 3 prostate cancer trials are currently recruiting?",
+      "category": "count",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false
+      }
+    },
+    {
+      "id": "monthly_timeseries",
+      "question": "Show monthly counts of new epilepsy trials started over time",
+      "category": "timeseries",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "timeseries",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_trials": "timeseries"
+      }
+    },
+    {
+      "id": "off_topic_math",
+      "question": "What is 2 + 2?",
+      "category": "off_topic",
+      "expect": {
+        "valid_request": false
+      }
+    },
+    {
+      "id": "off_topic_weather",
+      "question": "What's the weather in Boston today?",
+      "category": "off_topic",
+      "expect": {
+        "valid_request": false
+      }
+    },
+    {
+      "id": "off_topic_joke",
+      "question": "Tell me a joke about programming",
+      "category": "off_topic",
+      "expect": {
+        "valid_request": false
+      }
+    },
+    {
+      "id": "off_topic_capital",
+      "question": "What is the capital of France?",
+      "category": "off_topic",
+      "expect": {
+        "valid_request": false
+      }
+    },
+    {
+      "id": "follow_up_breakdown",
+      "question": "Break that down by sponsor",
+      "category": "follow_up",
+      "history": [
+        {
+          "role": "user",
+          "content": "How many recruiting lung cancer trials are there by phase?"
+        },
+        {
+          "role": "assistant",
+          "content": "There are 412 recruiting lung cancer trials across five phase categories."
+        }
+      ],
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "bar"
+      }
+    },
+    {
+      "id": "follow_up_pie",
+      "question": "Show the same as a pie chart",
+      "category": "follow_up",
+      "history": [
+        {
+          "role": "user",
+          "content": "How many recruiting diabetes trials are there by phase?"
+        },
+        {
+          "role": "assistant",
+          "content": "There are 1,937 recruiting diabetes trials across six phase categories."
+        }
+      ],
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": "pie",
+        "asks_for_breakdown": false,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_aggregation": "pie"
+      }
+    },
+    {
+      "id": "small_bucket_pie",
+      "question": "How many completed cystic fibrosis trials are there by phase?",
+      "category": "breakdown",
+      "expect": {
+        "valid_request": true,
+        "preferred_chart_type": null,
+        "asks_for_breakdown": true,
+        "asks_for_list": false,
+        "enhanced_chart_type_with_small_aggregation": "pie"
+      }
+    }
+  ]
+}

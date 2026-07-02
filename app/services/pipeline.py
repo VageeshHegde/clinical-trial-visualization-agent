@@ -16,6 +16,7 @@ from app.models.schemas import (
     TrialSearchResult,
     TrialSummary,
 )
+from app.services.conversation import build_agent_input, contextual_question, trim_history
 from app.services.visualization_builder import enhance_visualization
 
 
@@ -24,9 +25,17 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     settings.apply()
     settings.require_openai_api_key()
 
+    history = trim_history(request.history, max_messages=settings.chat_context_max_messages)
+    agent_input = build_agent_input(
+        request.question,
+        history,
+        max_messages=settings.chat_context_max_messages,
+    )
+    question_context = contextual_question(request.question, history)
+
     agent = create_visualization_agent(settings)
     try:
-        result = await Runner.run(agent, request.question)
+        result = await Runner.run(agent, agent_input)
     except Exception as exc:
         if is_token_rate_limit_error(exc):
             raise ValueError(TOKEN_RATE_LIMIT_MESSAGE) from exc
@@ -41,7 +50,7 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     )
 
     visualization = enhance_visualization(
-        request.question,
+        question_context,
         result,
         agent_output.visualization,
         trials=trials,

@@ -7,7 +7,8 @@ from agents import Runner
 
 from app.agent.visualization import create_visualization_agent
 from app.config import ensure_project_venv, get_settings
-from app.models.schemas import AgentVisualizationOutput, QueryRequest
+from app.models.schemas import AgentVisualizationOutput, ChatMessage, QueryRequest
+from app.services.conversation import build_agent_input, trim_history
 from app.services.pipeline import answer_question
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -28,6 +29,7 @@ async def run_repl() -> None:
     settings.require_openai_api_key()
 
     agent = create_visualization_agent(settings)
+    history: list[ChatMessage] = []
     print("Clinical Trial Visualization Agent (type 'exit' to quit)\n")
 
     while True:
@@ -42,10 +44,19 @@ async def run_repl() -> None:
         if question.lower() in {"exit", "quit"}:
             break
 
-        result = await Runner.run(agent, question)
+        trimmed = trim_history(history, max_messages=settings.chat_context_max_messages)
+        agent_input = build_agent_input(
+            question,
+            trimmed,
+            max_messages=settings.chat_context_max_messages,
+        )
+        result = await Runner.run(agent, agent_input)
         output = result.final_output
         if isinstance(output, AgentVisualizationOutput):
+            summary = output.visualization.summary
             print(json.dumps(output.model_dump(), indent=2))
+            history.append(ChatMessage(role="user", content=question))
+            history.append(ChatMessage(role="assistant", content=summary))
         else:
             print(output)
 

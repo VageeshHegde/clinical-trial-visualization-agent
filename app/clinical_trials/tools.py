@@ -7,6 +7,12 @@ from typing import Annotated, Any, Literal
 from agents import function_tool
 
 from app.clinical_trials.client import ClinicalTrialsClient
+from app.clinical_trials.compact import (
+    compact_aggregation,
+    compact_filter_options,
+    compact_search_result,
+    compact_trial,
+)
 from app.clinical_trials.extract import humanize_phase, humanize_status
 from app.clinical_trials.filters import StudySearchFilters
 from app.config import get_settings
@@ -143,7 +149,7 @@ def search_clinical_trials(
 ) -> TrialSearchResult:
     """List individual trials. Use count_trials_by_field for charts and breakdowns."""
     settings = get_settings()
-    effective_page_size = settings.clamp_agent_trial_limit(page_size)
+    effective_page_size = settings.clamp_tool_trial_limit(page_size)
     filters = _build_filters(
         condition=condition,
         intervention=intervention,
@@ -163,12 +169,18 @@ def search_clinical_trials(
     trials, next_page_token, total_count = client.search_studies(
         filters, page_size=effective_page_size
     )
-    return TrialSearchResult(
+    result = TrialSearchResult(
         total_returned=len(trials),
         total_count=total_count,
         has_more=next_page_token is not None,
         trials=trials,
         search_description=client.describe_search(filters),
+    )
+    return compact_search_result(
+        result,
+        max_trials=settings.agent_tool_max_trials,
+        max_title_chars=settings.agent_tool_max_title_chars,
+        max_conditions=settings.agent_tool_max_conditions,
     )
 
 
@@ -177,13 +189,20 @@ def get_clinical_trial(
     nct_id: Annotated[str, "NCT ID, e.g. NCT01234567"],
 ) -> TrialSummary:
     """Fetch one trial by NCT ID."""
-    return _get_client().get_study(nct_id.strip().upper())
+    settings = get_settings()
+    trial = _get_client().get_study(nct_id.strip().upper())
+    return compact_trial(
+        trial,
+        max_title_chars=settings.agent_tool_max_title_chars,
+        max_conditions=settings.agent_tool_max_conditions,
+    )
 
 
 @function_tool
 def get_clinical_trial_filter_options() -> FilterOptionsResult:
-    """Valid status/phase/study_type codes and query param names."""
-    return FilterOptionsResult(**_get_client().get_filter_options())
+    """Valid status/phase/study_type codes. Use sparingly — costs tokens."""
+    result = FilterOptionsResult(**_get_client().get_filter_options())
+    return compact_filter_options(result)
 
 
 @function_tool
@@ -231,12 +250,14 @@ def count_trials_by_field(
         )
         search_description = f"{search_description}{cap_note}"
 
-    return AggregationResult(
-        group_by=group_by,
-        total_trials=total_trials,
-        buckets=buckets,
-        data_source=data_source,
-        buckets_capped=buckets_capped,
-        buckets_total=buckets_total if buckets_capped else None,
-        search_description=f"{search_description}; aggregation={data_source}",
+    return compact_aggregation(
+        AggregationResult(
+            group_by=group_by,
+            total_trials=total_trials,
+            buckets=buckets,
+            data_source=data_source,
+            buckets_capped=buckets_capped,
+            buckets_total=buckets_total if buckets_capped else None,
+            search_description=f"{search_description}; aggregation={data_source}",
+        )
     )

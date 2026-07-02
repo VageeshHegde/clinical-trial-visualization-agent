@@ -16,5 +16,19 @@ dependencies = [
 [project.scripts]
 clinical-trials-agent = "main:main"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-html>=4.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: live agent/API tests (require OPENAI_API_KEY)",
+]
+
 [tool.vercel]
 entrypoint = "app.api:app"

@@ -137,9 +137,7 @@ class ClinicalTrialsClient:
             "status_values": self._metadata.get_enum_values("OverallStatus"),
             "phase_values": self._metadata.get_enum_values("Phase"),
             "study_type_values": self._metadata.get_enum_values("StudyType"),
-            "search_areas": self._metadata.get_search_area_query_params(),
-            "query_params": self._metadata.get_supported_query_params(),
-            "notes": "Values loaded from ClinicalTrials.gov /studies/enums and /studies/search-areas.",
+            "notes": "Enum codes from ClinicalTrials.gov /studies/enums.",
         }
 
     def describe_search(self, filters: StudySearchFilters | None = None) -> str:
@@ -155,12 +153,13 @@ class ClinicalTrialsClient:
             return [], 0, "stats_api"
 
         stats = payload[0]
+        top_n = self._settings.aggregation_top_n
         buckets = [
             AggregationBucket(
                 label=self._label_group_value(group_by, item["value"]),
                 count=int(item["studiesCount"]),
             )
-            for item in stats.get("topValues") or []
+            for item in (stats.get("topValues") or [])[:top_n]
         ]
         total = self._get_json(f"{self._base_url}/stats/size").get("totalStudies") or 0
         return buckets, int(total), "stats_api"
