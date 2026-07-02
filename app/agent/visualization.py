@@ -67,9 +67,9 @@ def create_visualization_agent(settings: Settings | None = None) -> Agent:
     config.require_openai_api_key()
 
     clinical_trials_tools = tool_namespace(
-        TOOL_NAMESPACE,
-        "Query ClinicalTrials.gov for trial counts, lists, lookups, and filter enums.",
-        [
+        name=TOOL_NAMESPACE,
+        description="Query ClinicalTrials.gov for trial counts, lists, lookups, and filter enums.",
+        tools=[
             count_trials_by_field,
             search_clinical_trials,
             get_clinical_trial,
