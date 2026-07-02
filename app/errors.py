@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 TOKEN_RATE_LIMIT_MESSAGE = (
-    "OpenAI token rate limit exceeded (TPM). The request was too large for your "
-    "organization's model quota — often caused by very large breakdowns (e.g. by sponsor) "
-    "or verbose tool payloads sent to the model. "
-    "Try narrowing your question with filters (condition, status, year, location), "
-    "set OPENAI_MODEL=gpt-4.1-mini in .env, or wait about a minute and retry. "
-    "This app caps sponsor/condition breakdowns to the top N categories to keep responses within limits."
+    "OpenAI token rate limit exceeded (TPM). This request needed more tokens than your "
+    "organization allows per minute (often ~30k on gpt-4.1). Common causes: listing too "
+    "many trials at once, broad sponsor/condition breakdowns, or retrying too quickly. "
+    "Try a narrower question (add condition, status, phase, or year filters), avoid "
+    "large trial lists, set OPENAI_MODEL=gpt-4.1-mini in .env, or wait about a minute "
+    "and retry. Trial lists and chart samples are capped by AGGREGATION_TOP_N in .env."
 )
 
 

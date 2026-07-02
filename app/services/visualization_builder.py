@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from app.config import get_settings
 from app.clinical_trials.tools import GroupByField, _bucket_trials
 from app.models.schemas import (
     AggregationResult,
@@ -81,7 +82,8 @@ def _group_by_label(group_by: GroupByField) -> str:
 
 
 def _choose_chart_type(bucket_count: int) -> ChartType:
-    if bucket_count <= 6:
+    pie_max = get_settings().chart_pie_max_buckets
+    if bucket_count <= pie_max:
         return ChartType.PIE
     return ChartType.BAR
 

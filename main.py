@@ -1,13 +1,16 @@
 import argparse
 import asyncio
 import json
+from pathlib import Path
 
 from agents import Runner
 
 from app.agent.visualization import create_visualization_agent
-from app.config import get_settings
+from app.config import ensure_project_venv, get_settings
 from app.models.schemas import AgentVisualizationOutput, QueryRequest
 from app.services.pipeline import answer_question
+
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 
 def _bootstrap() -> None:
@@ -73,7 +76,7 @@ def main() -> None:
             "app.api:app",
             host=settings.api_host,
             port=settings.api_port,
-            reload=settings.is_development,
+            reload=settings.uvicorn_reload,
         )
         return
 
@@ -89,4 +92,5 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    ensure_project_venv(PROJECT_ROOT)
     main()

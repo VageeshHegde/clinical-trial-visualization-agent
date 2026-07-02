@@ -8,7 +8,6 @@ import requests
 from app.clinical_trials.aggregation import (
     GROUP_BY_SCAN_FIELD,
     GROUP_BY_STATS_FIELD,
-    SCAN_PAGE_SIZE,
     buckets_from_counter,
     cap_buckets,
     dimension_filter_params,
@@ -60,14 +59,15 @@ class ClinicalTrialsClient:
         self,
         filters: StudySearchFilters | None = None,
         *,
-        page_size: int = 50,
+        page_size: int | None = None,
         page_token: str | None = None,
         include_total: bool = True,
     ) -> tuple[list[TrialSummary], str | None, int | None]:
         search_filters = filters or StudySearchFilters()
         params = self._build_search_params(search_filters)
         params["format"] = "json"
-        params["pageSize"] = min(max(page_size, 1), self._max_page_size)
+        effective_page_size = self._settings.clamp_agent_trial_limit(page_size)
+        params["pageSize"] = min(max(effective_page_size, 1), self._max_page_size)
         params["fields"] = ",".join(SUMMARY_FIELDS)
         if include_total:
             params["countTotal"] = "true"
@@ -196,7 +196,7 @@ class ClinicalTrialsClient:
         filters: StudySearchFilters,
     ) -> tuple[list[AggregationBucket], int, str]:
         params = self._build_search_params(filters)
-        params["pageSize"] = SCAN_PAGE_SIZE
+        params["pageSize"] = self._settings.clinical_trials_scan_page_size
         params["fields"] = GROUP_BY_SCAN_FIELD[group_by]
         params["countTotal"] = "true"
 

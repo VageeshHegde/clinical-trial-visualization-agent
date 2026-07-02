@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 from collections import Counter
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from agents import function_tool
 
@@ -28,6 +29,37 @@ def _get_client() -> ClinicalTrialsClient:
 
 
 GroupByField = Literal["status", "phase", "sponsor", "condition", "study_type"]
+
+_COUNT_TOOL_FILTER_KEYS = (
+    "condition",
+    "intervention",
+    "sponsor",
+    "lead_sponsor",
+    "location",
+    "search_term",
+    "status",
+    "phase",
+    "study_type",
+    "nct_ids",
+    "agg_filters",
+    "advanced_filter",
+)
+
+
+def sample_matching_trials(
+    tool_args: dict[str, Any],
+    *,
+    page_size: int | None = None,
+) -> list[TrialSummary]:
+    """Fetch a small trial sample using the same filters as count_trials_by_field."""
+    settings = get_settings()
+    filter_kwargs = {key: tool_args.get(key) for key in _COUNT_TOOL_FILTER_KEYS}
+    filters = _build_filters(**filter_kwargs)
+    trials, _, _ = _get_client().search_studies(
+        filters,
+        page_size=settings.clamp_agent_trial_limit(page_size),
+    )
+    return trials
 
 
 def _build_filters(
@@ -104,9 +136,14 @@ def search_clinical_trials(
     agg_filters: Annotated[list[str] | None, "aggFilters"] = None,
     advanced_filter: Annotated[str | None, "filter.advanced Essie expression"] = None,
     sort: Annotated[str | None, "sort field"] = None,
-    page_size: Annotated[int, "pageSize (1-200)"] = 50,
+    page_size: Annotated[
+        int | None,
+        "Optional pageSize; defaults to AGGREGATION_TOP_N from .env and is capped to that value",
+    ] = None,
 ) -> TrialSearchResult:
     """List individual trials. Use count_trials_by_field for charts and breakdowns."""
+    settings = get_settings()
+    effective_page_size = settings.clamp_agent_trial_limit(page_size)
     filters = _build_filters(
         condition=condition,
         intervention=intervention,
@@ -123,7 +160,9 @@ def search_clinical_trials(
         sort=sort,
     )
     client = _get_client()
-    trials, next_page_token, total_count = client.search_studies(filters, page_size=page_size)
+    trials, next_page_token, total_count = client.search_studies(
+        filters, page_size=effective_page_size
+    )
     return TrialSearchResult(
         total_returned=len(trials),
         total_count=total_count,

@@ -11,7 +11,7 @@ from app.clinical_trials.tools import (
 from app.config import Settings, get_settings
 from app.models.schemas import AgentVisualizationOutput
 
-VISUALIZATION_INSTRUCTIONS = """\
+_VISUALIZATION_INSTRUCTIONS_TEMPLATE = """\
 You are a clinical trials data analyst that helps users explore ClinicalTrials.gov.
 
 Scope (STRICT):
@@ -34,6 +34,8 @@ Tool usage guidelines:
   preferred tool for chart questions.
 - Use search_clinical_trials ONLY when the user explicitly wants a list of individual
   trials (e.g. "list trials", "show NCT IDs", "table of trials").
+  Omit page_size or keep it at most {aggregation_top_n} (AGGREGATION_TOP_N from .env);
+  do not request large lists — use filters to narrow results instead.
 - Use get_clinical_trial when the user references a specific NCT ID.
 - Use get_clinical_trial_filter_options when unsure about valid status/phase codes
   or query param names (do not guess enum values).
@@ -44,8 +46,8 @@ Tool usage guidelines:
   - diseases -> condition (query.cond)
   - year e.g. 2021 -> advanced_filter AREA[StartDate]RANGE[2021-01-01,2021-12-31]
   - lead sponsor / location -> query.lead / query.locn
-- count_trials_by_field caps large sponsor/condition breakdowns to top N buckets;
-  when buckets_capped is true, say so in the summary (remainder is grouped as Other).
+- count_trials_by_field caps large sponsor/condition breakdowns to top {aggregation_top_n}
+  buckets; when buckets_capped is true, say so in the summary (remainder is grouped as Other).
 
 Chart type rules (IMPORTANT — do not default to table):
 - Honor the user's explicit chart request over defaults (donut, pie, bar, line).
@@ -59,11 +61,11 @@ Chart type rules (IMPORTANT — do not default to table):
 - NEVER use "table" for "how many" or "by phase/status" questions.
 
 Data format for charts (bar/pie):
-- data: [{"label": "Phase 2", "count": 12}, {"label": "Phase 3", "count": 8}]
+- data: [{{"label": "Phase 2", "count": 12}}, {{"label": "Phase 3", "count": 8}}]
 - encoding: x="label", y="count"
 
 Data format for tables (only when listing trials):
-- data: [{"nct_id": "...", "title": "...", "status": "...", ...}]
+- data: [{{"nct_id": "...", "title": "...", "status": "...", ...}}]
 
 Write summary as a clear plain-English answer. Include meta with search_description,
 filters used, total_trials analyzed, and aggregation_source from count_trials_by_field.
@@ -76,7 +78,14 @@ Always include follow_questions at the top level (not inside visualization): 2-3
 specific next questions the user might ask based on the current query and results.
 """
 
-_agent_cache_key: tuple[str, int] | None = None
+
+def build_visualization_instructions(settings: Settings) -> str:
+    return _VISUALIZATION_INSTRUCTIONS_TEMPLATE.format(
+        aggregation_top_n=settings.aggregation_top_n,
+    )
+
+
+_agent_cache_key: tuple[str, int, int] | None = None
 _cached_agent: Agent | None = None
 
 
@@ -85,12 +94,16 @@ def create_visualization_agent(settings: Settings | None = None) -> Agent:
     config = settings or get_settings()
     config.require_openai_api_key()
 
-    cache_key = (config.openai_model, config.aggregation_top_n, "donut-v1")
+    cache_key = (
+        config.openai_model,
+        config.aggregation_top_n,
+        config.chart_pie_max_buckets,
+    )
     if _cached_agent is None or _agent_cache_key != cache_key:
         _agent_cache_key = cache_key
         _cached_agent = Agent(
             name="Clinical Trial Visualization Agent",
-            instructions=VISUALIZATION_INSTRUCTIONS,
+            instructions=build_visualization_instructions(config),
             tools=[
                 count_trials_by_field,
                 search_clinical_trials,

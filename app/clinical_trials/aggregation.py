@@ -31,8 +31,6 @@ _LABELERS: dict[str, Callable[[str], str]] = {
     "condition": lambda value: value,
 }
 
-SCAN_PAGE_SIZE = 1000
-
 HIGH_CARDINALITY_GROUP_FIELDS = frozenset({"sponsor", "condition"})
 
 
