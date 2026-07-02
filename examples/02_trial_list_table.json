@@ -1,0 +1,27 @@
+{
+  "question": "List recruiting Parkinson disease trials with NCT IDs",
+  "visualization": {
+    "chart_type": "table",
+    "title": "Recruiting Parkinson Disease Trials (Top 10)",
+    "summary": "Unable to retrieve recruiting Parkinson disease trials at this moment. Please try again later.",
+    "data": [],
+    "encoding": {
+      "x": null,
+      "y": null,
+      "color": null,
+      "label": null,
+      "value": null
+    },
+    "x_axis": null,
+    "y_axis": null,
+    "meta": {
+      "off_topic": false
+    }
+  },
+  "follow_questions": [
+    "List Parkinson disease trials by phase",
+    "Show recruiting Parkinson disease trials near me",
+    "How many Parkinson disease trials are in Phase 3?"
+  ],
+  "trials": []
+}

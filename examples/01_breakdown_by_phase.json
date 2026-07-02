@@ -1,0 +1,466 @@
+{
+  "question": "How many recruiting diabetes trials are there by phase?",
+  "visualization": {
+    "chart_type": "pie",
+    "title": "Recruiting Diabetes Trials by Phase",
+    "summary": "There are 1937 recruiting diabetes clinical trials distributed across phases as follows: 929 Not Applicable, 156 Phase 2, 108 Phase 4, 105 Phase 1, 103 Phase 3, and 33 Early Phase 1 trials. No buckets were capped in this count.",
+    "data": [
+      {
+        "label": "Not Applicable",
+        "count": 929
+      },
+      {
+        "label": "Phase 2",
+        "count": 156
+      },
+      {
+        "label": "Phase 4",
+        "count": 108
+      },
+      {
+        "label": "Phase 1",
+        "count": 105
+      },
+      {
+        "label": "Phase 3",
+        "count": 103
+      },
+      {
+        "label": "Early Phase 1",
+        "count": 33
+      }
+    ],
+    "encoding": {
+      "x": "label",
+      "y": "count",
+      "color": null,
+      "label": null,
+      "value": null
+    },
+    "x_axis": {
+      "field": "label",
+      "label": "Phase"
+    },
+    "y_axis": {
+      "field": "count",
+      "label": "Number of trials"
+    },
+    "meta": {
+      "condition": "diabetes",
+      "status": "RECRUITING",
+      "group_by": "phase",
+      "total_trials": 1937,
+      "aggregation_source": "count_total",
+      "chart_source": "aggregation"
+    }
+  },
+  "follow_questions": [
+    "Show me recruiting diabetes trials by sponsor",
+    "How many recruiting diabetes trials are there by study type?",
+    "List recruiting phase 3 diabetes trials"
+  ],
+  "trials": [
+    {
+      "nct_id": "NCT05970237",
+      "title": "A Study to Evaluate the Efficacy and Safety of Dapagliflozin in Patient With Type 2 Diabetes Mellitus and Hypertension",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Diabetes Mellitus",
+        "Hypertension"
+      ],
+      "sponsor": "Boryung Pharmaceutical Co., Ltd",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 9000,
+      "start_date": "2023-07-26"
+    },
+    {
+      "nct_id": "NCT06025292",
+      "title": "Effects of Lean Pork Loin Intake on Protein Homeostasis and Glucose Regulation in Prediabetic Adults",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Hyperglycaemia (Non Diabetic)",
+        "Prediabetes"
+      ],
+      "sponsor": "University of Arkansas",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 20,
+      "start_date": "2024-09-11"
+    },
+    {
+      "nct_id": "NCT06727409",
+      "title": "Use of Clinical-trials and Simulation Models to Estimate Cost-effectiveness of Non-steroidal Mineralocorticoid Antagonists, RASi and SGLT2i as Triple Therapy With Type 2 Diabetes and Chronic Kidney Disease",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE4"
+      ],
+      "conditions": [
+        "Patients With Type 2 Diabetes"
+      ],
+      "sponsor": "Chinese University of Hong Kong",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 82,
+      "start_date": "2024-12-12"
+    },
+    {
+      "nct_id": "NCT04583800",
+      "title": "Prediction of Heart Failure and Cognitive Decline in Type 2 Diabetes",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Diabetes Mellitus, Type 2",
+        "Heart Failure",
+        "Cognitive Decline"
+      ],
+      "sponsor": "University Hospital, Lille",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 600,
+      "start_date": "2021-06-22"
+    },
+    {
+      "nct_id": "NCT07224321",
+      "title": "INHALE-1st: AfrezzaÂ® For Youth With Newly-Diagnosed Type 1 Diabetes",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE2"
+      ],
+      "conditions": [
+        "Type 1 Diabetes Mellitus"
+      ],
+      "sponsor": "Mannkind Corporation",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 100,
+      "start_date": "2026-02-04"
+    },
+    {
+      "nct_id": "NCT05762432",
+      "title": "Diabetic Foot Ulcer Research Study",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Diabetic Foot Ulcer",
+        "Diabetic Foot Ulcer Neuropathic",
+        "Diabetic Foot Ulcer Ischemic"
+      ],
+      "sponsor": "Community Pharmacology Services Ltd",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 100,
+      "start_date": "2024-04-26"
+    },
+    {
+      "nct_id": "NCT07564414",
+      "title": "A Research Study to Look at How Two Different Doses of CagriSema and One Dose of Semaglutide Help People Living With Obesity With or Without Type 2 Diabetes Lose Weight",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE3"
+      ],
+      "conditions": [
+        "Obesity",
+        "Type 2 Diabetes"
+      ],
+      "sponsor": "Novo Nordisk A/S",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 2500,
+      "start_date": "2026-05-21"
+    },
+    {
+      "nct_id": "NCT06055036",
+      "title": "Black Impact: The Mechanisms Underlying Psychosocial Stress Reduction in a Cardiovascular Health Intervention",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Cardiometabolic Syndrome",
+        "Physical Inactivity",
+        "Hypertension",
+        "Type 2 Diabetes",
+        "PreDiabetes",
+        "Obesity",
+        "Cardiovascular Diseases",
+        "Smoking",
+        "Sleep",
+        "Hyperlipidemias",
+        "Diet, Healthy",
+        "Blood Pressure"
+      ],
+      "sponsor": "Ohio State University",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 340,
+      "start_date": "2023-08-24"
+    },
+    {
+      "nct_id": "NCT06923644",
+      "title": "Targeted Precision Nutrition Strategy To Prevent Chronic Metabolic Diseases",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Obesity and Overweight",
+        "Pre-diabetic",
+        "Type 2 Diabetes Mellitus (T2DM)"
+      ],
+      "sponsor": "Maastricht University Medical Center",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 240,
+      "start_date": "2025-04-23"
+    },
+    {
+      "nct_id": "NCT06319716",
+      "title": "LINK-IT: Leveraging vIdeos and commuNity Health worKers to Improve Diabetes OuTcomes",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Type 2 Diabetes"
+      ],
+      "sponsor": "NYU Langone Health",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 540,
+      "start_date": "2024-12-29"
+    },
+    {
+      "nct_id": "NCT06906081",
+      "title": "Finerenone Treatment for Diabetic Cardiovascular Autonomic Neuropathy: the FibroCAN Study",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE2"
+      ],
+      "conditions": [
+        "Cardiovascular Autonomic Neuropathy",
+        "Type 2 Diabetes",
+        "Diabetic Neuropathies"
+      ],
+      "sponsor": "Peter Rossing",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 100,
+      "start_date": "2025-05-02"
+    },
+    {
+      "nct_id": "NCT06141434",
+      "title": "PRenatal and Obstetric Maternal Exposures and ISlet Autoantibodies in Early Life",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Type 1 Diabetes",
+        "Pregnancy in Diabetic"
+      ],
+      "sponsor": "University of Colorado, Denver",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 6000,
+      "start_date": "2022-12-01"
+    },
+    {
+      "nct_id": "NCT07512609",
+      "title": "Environment, Inflammation and Metabolic Diseases Study",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Endocrine Disease",
+        "Metabolic Disorders",
+        "Hypertension",
+        "Diabetes Mellitus"
+      ],
+      "sponsor": "Qifu Li",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 8000,
+      "start_date": "2020-12-25"
+    },
+    {
+      "nct_id": "NCT06557005",
+      "title": "Facilitated Transitions From Postpartum to Primary Care Coordination for People With Chronic Conditions",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Hypertension",
+        "Diabetes",
+        "Postpartum",
+        "Pregnancy",
+        "Anxiety",
+        "Depression",
+        "Obesity"
+      ],
+      "sponsor": "Massachusetts General Hospital",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 1320,
+      "start_date": "2025-05-23"
+    },
+    {
+      "nct_id": "NCT06140537",
+      "title": "Efficacy and Mechanisms of Dapagliflozin in Promoting Kidney Function and Cardiovascular Health in Kidney Transplant Recipients",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE4"
+      ],
+      "conditions": [
+        "Kidney Transplant; Complications",
+        "Vascular Diseases",
+        "Diabetes"
+      ],
+      "sponsor": "University of Colorado, Denver",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 80,
+      "start_date": "2024-02-01"
+    },
+    {
+      "nct_id": "NCT05835037",
+      "title": "Effect of Zinc on Glucose Homeostasis",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE4"
+      ],
+      "conditions": [
+        "Prediabetic State",
+        "Hyperglycemia"
+      ],
+      "sponsor": "University of Maryland, Baltimore",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 200,
+      "start_date": "2024-02-16"
+    },
+    {
+      "nct_id": "NCT07341373",
+      "title": "A Single Bolus, 12-hour Euglycemic Clamp Study of the Safety, Pharmacokinetics (PK) and Glucodynamics (GD) of Intraperitoneal (IP) Portal Insulin U-500",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE1"
+      ],
+      "conditions": [
+        "Type 1 Diabetes"
+      ],
+      "sponsor": "Portal Diabetes, Inc.",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 25,
+      "start_date": "2026-02-10"
+    },
+    {
+      "nct_id": "NCT07374705",
+      "title": "Disentangling the Effect of Brain Insulin Resistance on Brain Health",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Diabetes Type 2",
+        "Diabetes Type 1"
+      ],
+      "sponsor": "Henrik Bo Wiberg Larsson",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 150,
+      "start_date": "2026-01-01"
+    },
+    {
+      "nct_id": "NCT07482072",
+      "title": "Brain Blood Flow and Sugar Transport in Alzheimer's Disease With and Without Diabetes - A Pilot Imaging Study",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Alzheimer Dementia (AD)",
+        "Diabete Type 2"
+      ],
+      "sponsor": "Rigshospitalet, Denmark",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 60,
+      "start_date": "2026-03"
+    },
+    {
+      "nct_id": "NCT06120881",
+      "title": "Precision Dosing of Metformin in Youth With T2D",
+      "status": "RECRUITING",
+      "phases": [
+        "EARLY_PHASE1"
+      ],
+      "conditions": [
+        "Type 2 Diabetes"
+      ],
+      "sponsor": "University of California, San Francisco",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 20,
+      "start_date": "2024-04-25"
+    },
+    {
+      "nct_id": "NCT06596967",
+      "title": "Heat Therapy in Type 2 Diabetes",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE1"
+      ],
+      "conditions": [
+        "Type 2 Diabetes"
+      ],
+      "sponsor": "Purdue University",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 24,
+      "start_date": "2024-09-03"
+    },
+    {
+      "nct_id": "NCT06931275",
+      "title": "Best Practice Advisories to Reduce Inequities in Technology Use for People With Type 1 Diabetes",
+      "status": "RECRUITING",
+      "phases": [
+        "NA"
+      ],
+      "conditions": [
+        "Diabetes Mellitus, Type 1"
+      ],
+      "sponsor": "T1D Exchange, United States",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 1178,
+      "start_date": "2024-08-13"
+    },
+    {
+      "nct_id": "NCT07437157",
+      "title": "The Establishment of Hong Kong Diabetes Steatotic Liver Disease Register",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Metabolic Dysfunction-Associated Steatotic Liver Disease",
+        "Type 2 Diabetes (T2DM)"
+      ],
+      "sponsor": "Chinese University of Hong Kong",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 1000,
+      "start_date": "2025-06-11"
+    },
+    {
+      "nct_id": "NCT03842475",
+      "title": "Who Will Benefit From Bariatric Surgery for Diabetes?",
+      "status": "RECRUITING",
+      "phases": [],
+      "conditions": [
+        "Diabetes Mellitus, Type 2",
+        "Obesity"
+      ],
+      "sponsor": "Imperial College London",
+      "study_type": "OBSERVATIONAL",
+      "enrollment": 210,
+      "start_date": "2018-10-01"
+    },
+    {
+      "nct_id": "NCT05065372",
+      "title": "MANATEE-T1D: Metformin ANd AutomaTEd Insulin Delivery System Effects on Renal Vascular Resistance, Insulin Sensitivity, and Cardiometabolic Function in Youth With Type 1 Diabetes",
+      "status": "RECRUITING",
+      "phases": [
+        "PHASE1"
+      ],
+      "conditions": [
+        "Type 1 Diabetes",
+        "Diabetic Kidney Disease",
+        "Cardiovascular Diseases",
+        "Endothelial Dysfunction",
+        "Insulin Sensitivity"
+      ],
+      "sponsor": "Kalie Tommerdahl",
+      "study_type": "INTERVENTIONAL",
+      "enrollment": 60,
+      "start_date": "2022-07-01"
+    }
+  ]
+}

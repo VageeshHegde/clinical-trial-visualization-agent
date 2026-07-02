@@ -1,0 +1,33 @@
+{
+  "question": "Show a time series of lung cancer trials started per year",
+  "visualization": {
+    "chart_type": "timeseries",
+    "title": "Lung Cancer Clinical Trials Started Per Year",
+    "summary": "Time series visualization of lung cancer clinical trials started each year is currently unavailable due to data fetching limitations.",
+    "data": [],
+    "encoding": {
+      "x": "start_year",
+      "y": "count",
+      "color": null,
+      "label": null,
+      "value": null
+    },
+    "x_axis": {
+      "field": "start_year",
+      "label": "Year"
+    },
+    "y_axis": {
+      "field": "count",
+      "label": "Number of Trials"
+    },
+    "meta": {
+      "off_topic": false
+    }
+  },
+  "follow_questions": [
+    "Show the number of recruiting lung cancer trials by phase",
+    "List top sponsors for lung cancer trials",
+    "How many lung cancer trials are interventional versus observational?"
+  ],
+  "trials": []
+}

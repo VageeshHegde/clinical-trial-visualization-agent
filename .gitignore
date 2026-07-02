@@ -1,6 +1,5 @@
 .env
 .venv/
-pytest-report/
 __pycache__/
 *.py[cod]
 *.egg-info/
