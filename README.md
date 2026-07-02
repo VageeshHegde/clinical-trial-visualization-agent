@@ -38,6 +38,7 @@ flowchart TD
             Search[search_clinical_trials]
             Count[count_trials_by_field]
             Get[get_clinical_trial]
+            Filters[get_clinical_trial_filter_options]
         end
 
         Tools --> CTG[ClinicalTrials.gov API]
@@ -47,16 +48,18 @@ flowchart TD
         Agent --> Spec[VisualizationSpec]
         Spec --> Enhance[enhance_visualization]
         Enhance -->|list request| Keep1[Keep agent spec]
-        Enhance -->|AggregationResult| Auto[bar or pie from buckets]
+        Enhance -->|AggregationResult| Auto[bar, pie, or donut from buckets]
         Enhance -->|breakdown + table trials| Rebuild[Rebuild chart from trials]
         Enhance -->|else| Keep2[Keep agent spec]
 
         Agent --> Extract[_extract_trials_from_run]
+        Extract -->|chart query, no list trials| Sample[sample_matching_trials]
         Keep1 --> Response[QueryResponse]
         Auto --> Response
         Rebuild --> Response
         Keep2 --> Response
         Extract --> Response
+        Sample --> Response
     end
 
     Response --> Panel
@@ -65,20 +68,23 @@ flowchart TD
 
 ### Agent tools
 
-- **search_clinical_trials** — search and list trials with filters (condition, intervention, sponsor, status, phase)
+- **count_trials_by_field** — aggregate trial counts by status, phase, sponsor, condition, or study type (preferred for chart questions)
+- **search_clinical_trials** — list individual trials with filters; `page_size` defaults to and is capped by `AGGREGATION_TOP_N`
 - **get_clinical_trial** — fetch a single trial by NCT ID
-- **count_trials_by_field** — aggregate trial counts by status, phase, sponsor, condition, or study type (preferred for bar/pie charts)
+- **get_clinical_trial_filter_options** — valid status/phase/study_type codes and query param names
 
-The agent returns a `VisualizationSpec` plus `follow_questions`. `pipeline.py` runs `enhance_visualization` to correct chart types when needed and `_extract_trials_from_run` to attach source trial records (including from aggregation tools) for traceability. Follow-ups are exposed only at the top level of `QueryResponse`.
+The agent returns a `VisualizationSpec` plus `follow_questions`. `pipeline.py` runs `enhance_visualization` to correct chart types when needed and `_extract_trials_from_run` to attach source trial records for traceability. For chart/count queries, if no trials came back from tool outputs, the pipeline samples up to `AGGREGATION_TOP_N` matching trials. Follow-ups are exposed only at the top level of `QueryResponse`.
 
 ### Chart type selection
 
 Chart type is chosen in two stages:
 
-1. **Agent** — follows prompt rules (bar for counts/comparisons, pie for ≤6 categories, table only for explicit list requests, etc.)
+1. **Agent** — follows prompt rules (bar for counts/comparisons, pie/donut for small part-to-whole sets, table only for explicit list requests, etc.)
 2. **Post-processing** (`enhance_visualization`) — evaluated in order:
    - List-style questions → keep the agent's choice
-   - `AggregationResult` from `count_trials_by_field` → force bar or pie (pie if ≤6 buckets, else bar)
+   - Network graph questions + trial rows → force `network` (sponsor ↔ condition links from trials)
+   - Time series questions + trial rows → force `timeseries` (trial counts bucketed by start date)
+   - `AggregationResult` from `count_trials_by_field` → force bar, pie, or donut (pie/donut if bucket count ≤ `CHART_PIE_MAX_BUCKETS`, else bar)
    - Breakdown question + table-shaped trial data → rebuild chart from trial rows
    - Otherwise → keep the agent's choice
 
@@ -87,8 +93,8 @@ The frontend does not select chart type; it renders whatever `chart_type` is in 
 ## Setup
 
 ```bash
-# Install dependencies
-uv sync   # or: pip install -e .
+# Install dependencies (recommended)
+uv sync
 
 # Configure environment variables
 cp .env.example .env
@@ -103,7 +109,15 @@ Configuration is loaded from `.env` via `app/config.py` (pydantic-settings). See
 | `OPENAI_MODEL` | Model passed to the agent | `gpt-4.1` |
 | `API_HOST` / `API_PORT` | Server bind address | `0.0.0.0` / `8000` |
 | `CORS_ORIGINS` | Comma-separated origins, or `*` | `*` |
-| `CLINICAL_TRIALS_*` | API URL, timeout, page size | see `.env.example` |
+| `ENVIRONMENT` | `development` enables reload and requires `.venv` for `main.py` | `development` |
+| `VENV_DIR` | Project virtualenv directory | `.venv` |
+| `AGGREGATION_TOP_N` | Max buckets, trial list size, and chart trial samples | `25` |
+| `AGGREGATION_TOP_N_MIN` / `MAX` | Allowed range for `AGGREGATION_TOP_N` | `5` / `100` |
+| `CHART_PIE_MAX_BUCKETS` | Use pie/donut instead of bar when bucket count ≤ this | `6` |
+| `CLINICAL_TRIALS_BASE_URL` | ClinicalTrials.gov API base URL | see `.env.example` |
+| `CLINICAL_TRIALS_TIMEOUT` | HTTP timeout (seconds) | `30` |
+| `CLINICAL_TRIALS_MAX_PAGE_SIZE` | Upper bound for API `pageSize` | `200` |
+| `CLINICAL_TRIALS_SCAN_PAGE_SIZE` | Page size when scanning for sponsor/condition aggregation | `1000` |
 
 ## Usage
 
@@ -117,8 +131,7 @@ Configuration is loaded from `.env` via `app/config.py` (pydantic-settings). See
 python main.py --serve
 ```
 
-Open [http://localhost:8000](http://localhost:8000) in your browser. The Jinja frontend renders
-`VisualizationSpec` responses with **Chart.js** (bar, pie, line) and **D3.js** (grouped bar).
+With `ENVIRONMENT=development`, the server auto-reloads and re-execs into `.venv` when present. Open [http://localhost:8000](http://localhost:8000) in your browser. The Jinja frontend renders `VisualizationSpec` responses with **Chart.js** (bar, pie, donut, line, metric cards, table) and **D3.js** (grouped bar).
 
 ### HTTP API (JSON)
 
@@ -126,6 +139,16 @@ Open [http://localhost:8000](http://localhost:8000) in your browser. The Jinja f
 
 - Deployed: [https://clinical-trial-visualization-agent-chi.vercel.app/docs](https://clinical-trial-visualization-agent-chi.vercel.app/docs)
 - Local: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+`POST /api/query` may return:
+
+| Status | Meaning |
+|--------|---------|
+| `200` | Success (`QueryResponse`) |
+| `422` | Invalid or off-topic question |
+| `429` | OpenAI token rate limit (TPM) exceeded |
+| `503` | Missing `OPENAI_API_KEY` or other configuration error |
+| `500` | Unexpected agent or server error |
 
 **Deployed:**
 
@@ -162,10 +185,19 @@ python main.py --repl
   "visualization": {
     "chart_type": "bar",
     "title": "Recruiting Diabetes Trials by Phase",
-    "summary": "Among the sampled recruiting diabetes trials...",
-    "data": [{"phase": "Phase 2", "count": 12}],
-    "encoding": {"x": "phase", "y": "count"},
-    "meta": {"total_trials": 50, "search_description": "condition='diabetes'; status=RECRUITING"}
+    "summary": "There are 1,937 recruiting diabetes trials across six phase categories.",
+    "data": [
+      {"label": "Phase 2", "count": 412},
+      {"label": "Phase 3", "count": 318}
+    ],
+    "encoding": {"x": "label", "y": "count"},
+    "x_axis": {"field": "label", "label": "Phase"},
+    "y_axis": {"field": "count", "label": "Number of trials"},
+    "meta": {
+      "total_trials": 1937,
+      "search_description": "condition='diabetes'; status=RECRUITING",
+      "aggregation_source": "count_total"
+    }
   },
   "follow_questions": [
     "How many of these trials are in phase 3?",
@@ -184,6 +216,15 @@ python main.py --repl
 }
 ```
 
-`trials` lists source records behind the visualization (including chart answers from aggregation). NCT IDs in the UI link to `https://clinicaltrials.gov/study/{nct_id}`.
+`trials` provides source records for traceability:
 
-Supported `chart_type` values: `bar`, `pie`, `line`, `table`, `metric_cards`, `grouped_bar`.
+- **List queries** — trials returned by `search_clinical_trials`
+- **Chart/count queries** — up to `AGGREGATION_TOP_N` trials sampled with the same filters when no list tool was used
+
+NCT IDs in the UI link to `https://clinicaltrials.gov/study/{nct_id}`.
+
+Supported `chart_type` values: `bar`, `pie`, `donut`, `line`, `table`, `metric_cards`, `grouped_bar`, `network`, `timeseries`.
+
+**Network graph example:** *"Show a network graph of sponsors and conditions for recruiting diabetes trials"*
+
+**Time series example:** *"Show a time series of lung cancer trials started per year"*

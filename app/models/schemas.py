@@ -16,6 +16,8 @@ class ChartType(str, Enum):
     TABLE = "table"
     METRIC_CARDS = "metric_cards"
     GROUPED_BAR = "grouped_bar"
+    NETWORK = "network"
+    TIMESERIES = "timeseries"
 
 
 class AxisEncoding(BaseModel):

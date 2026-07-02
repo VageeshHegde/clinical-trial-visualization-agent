@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
+from datetime import date
 
 from app.config import get_settings
 from app.clinical_trials.tools import GroupByField, _bucket_trials
@@ -46,15 +48,54 @@ _LIST_PATTERNS = [
 ]
 
 _CHART_TYPE_PATTERNS: list[tuple[re.Pattern[str], ChartType]] = [
+    (re.compile(r"\bnetwork(\s+graph)?\b|\brelationship(\s+map)?\b", re.I), ChartType.NETWORK),
+    (
+        re.compile(
+            r"\btime\s*series\b|\bover\s+time\b|\btrend(s)?\b|\bby\s+year\b|\bper\s+year\b"
+            r"|\bmonthly\b|\bannual(ly)?\b|\bstarted\s+(each|per)\b",
+            re.I,
+        ),
+        ChartType.TIMESERIES,
+    ),
     (re.compile(r"\bdonut(\s+chart)?\b|\bdoughnut(\s+chart)?\b", re.I), ChartType.DONUT),
     (re.compile(r"\bpie(\s+chart)?\b", re.I), ChartType.PIE),
     (re.compile(r"\bbar(\s+chart)?\b", re.I), ChartType.BAR),
     (re.compile(r"\bline(\s+chart)?\b", re.I), ChartType.LINE),
 ]
 
+_NETWORK_PATTERNS = [
+    re.compile(r"\bnetwork(\s+graph)?\b", re.I),
+    re.compile(r"\brelationship(\s+map)?\b", re.I),
+    re.compile(r"\bconnections?\s+between\b", re.I),
+    re.compile(r"\bgraph\s+of\b", re.I),
+    re.compile(r"\blink(s|ed)?\s+between\b", re.I),
+    re.compile(r"\bsponsors?\s+and\s+conditions?\b", re.I),
+]
+
+_TIMESERIES_PATTERNS = [
+    re.compile(r"\btime\s*series\b", re.I),
+    re.compile(r"\bover\s+time\b", re.I),
+    re.compile(r"\btrend(s)?\b", re.I),
+    re.compile(r"\bby\s+year\b", re.I),
+    re.compile(r"\bper\s+year\b", re.I),
+    re.compile(r"\bmonthly\b", re.I),
+    re.compile(r"\bannual(ly)?\b", re.I),
+    re.compile(r"\bstarted\s+(each|per)\b", re.I),
+    re.compile(r"\btrials\s+started\b", re.I),
+    re.compile(r"\bwhen\s+(were|was)\b.*\bstarted\b", re.I),
+]
+
 
 def _asks_for_list(question: str) -> bool:
     return any(pattern.search(question) for pattern in _LIST_PATTERNS)
+
+
+def _asks_for_network(question: str) -> bool:
+    return any(pattern.search(question) for pattern in _NETWORK_PATTERNS)
+
+
+def _asks_for_timeseries(question: str) -> bool:
+    return any(pattern.search(question) for pattern in _TIMESERIES_PATTERNS)
 
 
 def _preferred_chart_type(question: str) -> ChartType | None:
@@ -86,6 +127,133 @@ def _choose_chart_type(bucket_count: int) -> ChartType:
     if bucket_count <= pie_max:
         return ChartType.PIE
     return ChartType.BAR
+
+
+def _parse_start_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    text = value.strip()
+    match = re.match(r"^(\d{4})-(\d{2})(?:-(\d{2}))?$", text)
+    if match:
+        year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3) or 1)
+        try:
+            return date(year, month, day)
+        except ValueError:
+            return None
+    match = re.match(r"^(\d{4})$", text)
+    if match:
+        return date(int(match.group(1)), 1, 1)
+    return None
+
+
+def _timeseries_granularity(question: str, dates: list[date]) -> str:
+    if re.search(r"\b(monthly|per month|each month|by month)\b", question, re.I):
+        return "month"
+    if re.search(r"\b(yearly|per year|each year|by year|annual(ly)?)\b", question, re.I):
+        return "year"
+    if len(dates) < 2:
+        return "year"
+    span_days = (max(dates) - min(dates)).days
+    return "year" if span_days > 730 else "month"
+
+
+def _timeseries_bucket_key(parsed: date, granularity: str) -> str:
+    if granularity == "year":
+        return f"{parsed.year}-01-01"
+    return f"{parsed.year}-{parsed.month:02d}-01"
+
+
+def build_timeseries_from_trials(
+    question: str,
+    trials: list[TrialSummary],
+    *,
+    title: str,
+    summary: str,
+    meta: dict,
+) -> VisualizationSpec:
+    """Count trials by start date bucket (year or month)."""
+    parsed_dates = [
+        parsed
+        for trial in trials
+        if (parsed := _parse_start_date(trial.start_date)) is not None
+    ]
+    granularity = _timeseries_granularity(question, parsed_dates)
+    counts: Counter[str] = Counter()
+
+    for trial in trials:
+        parsed = _parse_start_date(trial.start_date)
+        if parsed is None:
+            continue
+        counts[_timeseries_bucket_key(parsed, granularity)] += 1
+
+    data = [
+        {"date": bucket, "count": count}
+        for bucket, count in sorted(counts.items())
+        if count > 0
+    ]
+    x_label = "Start year" if granularity == "year" else "Start month"
+
+    return VisualizationSpec(
+        chart_type=ChartType.TIMESERIES,
+        title=title,
+        summary=summary,
+        data=data,
+        encoding=ChartEncoding(x="date", y="count"),
+        x_axis=AxisEncoding(field="date", label=x_label),
+        y_axis=AxisEncoding(field="count", label="Number of trials"),
+        meta={
+            **meta,
+            "timeseries_granularity": granularity,
+            "trial_count": len(trials),
+            "dated_trials": len(parsed_dates),
+            "chart_source": "trial_timeseries",
+        },
+    )
+
+
+def build_network_from_trials(
+    trials: list[TrialSummary],
+    *,
+    title: str,
+    summary: str,
+    meta: dict,
+) -> VisualizationSpec:
+    """Bipartite sponsor ↔ condition graph from trial rows."""
+    nodes: dict[str, dict[str, str]] = {}
+    link_counts: Counter[tuple[str, str]] = Counter()
+
+    def ensure_node(group: str, label: str) -> str:
+        node_key = f"{group}:{label}"
+        if node_key not in nodes:
+            nodes[node_key] = {"id": node_key, "label": label, "group": group}
+        return node_key
+
+    for trial in trials:
+        sponsor_id = ensure_node("sponsor", trial.sponsor or "Unknown sponsor")
+        conditions = trial.conditions or ["Unspecified condition"]
+        for condition in conditions:
+            condition_id = ensure_node("condition", condition)
+            link_counts[(sponsor_id, condition_id)] += 1
+
+    links = [
+        {"source": source, "target": target, "value": count}
+        for (source, target), count in link_counts.items()
+        if count > 0
+    ]
+
+    return VisualizationSpec(
+        chart_type=ChartType.NETWORK,
+        title=title,
+        summary=summary,
+        data=[{"nodes": list(nodes.values()), "links": links}],
+        encoding=ChartEncoding(label="label", color="group"),
+        meta={
+            **meta,
+            "network_type": "sponsor_condition",
+            "trial_count": len(trials),
+            "chart_source": "trial_network",
+        },
+    )
 
 
 def build_chart_from_buckets(
@@ -189,6 +357,10 @@ def _apply_preferred_chart_type(
         return visualization
     if visualization.chart_type == preferred:
         return visualization
+    if visualization.chart_type == ChartType.NETWORK:
+        return visualization
+    if visualization.chart_type == ChartType.TIMESERIES:
+        return visualization
     if _is_label_count_chart(visualization) or visualization.chart_type in {
         ChartType.BAR,
         ChartType.PIE,
@@ -209,7 +381,28 @@ def enhance_visualization(
     question: str,
     result: object,
     visualization: VisualizationSpec,
+    *,
+    trials: list[TrialSummary] | None = None,
 ) -> VisualizationSpec:
+    trial_rows = list(trials or [])
+
+    if _asks_for_network(question) and trial_rows:
+        return build_network_from_trials(
+            trial_rows,
+            title=visualization.title,
+            summary=visualization.summary,
+            meta=visualization.meta,
+        )
+
+    if _asks_for_timeseries(question) and trial_rows:
+        return build_timeseries_from_trials(
+            question,
+            trial_rows,
+            title=visualization.title,
+            summary=visualization.summary,
+            meta=visualization.meta,
+        )
+
     if _asks_for_list(question):
         return visualization
 

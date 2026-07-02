@@ -54,7 +54,16 @@ async def health() -> dict[str, str | bool]:
     }
 
 
-@app.post("/api/query", response_model=QueryResponse)
+@app.post(
+    "/api/query",
+    response_model=QueryResponse,
+    responses={
+        422: {"description": "Validation error (invalid or off-topic question)"},
+        429: {"description": "OpenAI token rate limit exceeded (TPM)"},
+        503: {"description": "Service unavailable (e.g. missing OPENAI_API_KEY)"},
+        500: {"description": "Internal server error"},
+    },
+)
 async def query_trials(request: QueryRequest) -> QueryResponse:
     try:
         return await answer_question(request)

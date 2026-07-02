@@ -36,12 +36,15 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     if not isinstance(agent_output, AgentVisualizationOutput):
         raise TypeError("Agent did not return an AgentVisualizationOutput")
 
-    visualization = enhance_visualization(
-        request.question, result, agent_output.visualization
-    )
-
     trials = _extract_trials_from_run(
         result, sample_size=settings.clamp_agent_trial_limit()
+    )
+
+    visualization = enhance_visualization(
+        request.question,
+        result,
+        agent_output.visualization,
+        trials=trials,
     )
 
     return QueryResponse(

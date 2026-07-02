@@ -291,6 +291,67 @@ main {
   width: 100%;
 }
 
+.network-graph {
+  width: 100%;
+}
+
+.network-graph svg {
+  display: block;
+  width: 100%;
+  min-height: 420px;
+}
+
+.network-link {
+  stroke: #94a3b8;
+  stroke-opacity: 0.65;
+}
+
+.network-node {
+  cursor: grab;
+}
+
+.network-node:active {
+  cursor: grabbing;
+}
+
+.network-label {
+  font-size: 11px;
+  fill: var(--text);
+  pointer-events: none;
+}
+
+.viz-empty {
+  color: var(--muted);
+  padding: 1rem 0;
+}
+
+.timeseries-graph {
+  width: 100%;
+}
+
+.timeseries-graph svg {
+  display: block;
+  width: 100%;
+  min-height: 380px;
+}
+
+.timeseries-area {
+  fill: rgba(13, 110, 110, 0.15);
+}
+
+.timeseries-line {
+  fill: none;
+  stroke: #0d6e6e;
+  stroke-width: 2.5;
+}
+
+.timeseries-point {
+  fill: #0d6e6e;
+  stroke: #fff;
+  stroke-width: 1.5;
+  cursor: pointer;
+}
+
 .chart-canvas {
   width: 100% !important;
   max-height: 420px;

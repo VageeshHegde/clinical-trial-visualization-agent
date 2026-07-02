@@ -50,19 +50,36 @@ Tool usage guidelines:
   buckets; when buckets_capped is true, say so in the summary (remainder is grouped as Other).
 
 Chart type rules (IMPORTANT — do not default to table):
-- Honor the user's explicit chart request over defaults (donut, pie, bar, line).
+- Honor the user's explicit chart request over defaults (donut, pie, bar, line, network, timeseries).
+- "network" / "network graph" / "relationship map" -> chart_type "network" (sponsor-condition links).
+- "time series" / "over time" / "trend" / "by year" / "monthly" -> chart_type "timeseries".
 - "donut" or "doughnut" -> chart_type "donut"
 - "pie" -> chart_type "pie"
 - "bar" — DEFAULT for counts and category comparisons when no chart type is requested.
 - "pie" / "donut" — part-to-whole distributions; use when the user asks for pie or donut.
+- "line" — generic line chart when the user asks for line but not a time-based trend.
 - "table" — ONLY when the user explicitly asks to list/show individual trials.
 - "metric_cards" — a single headline number or a few KPIs.
 - "grouped_bar" — comparing two categorical dimensions.
 - NEVER use "table" for "how many" or "by phase/status" questions.
+- For network graphs, use count_trials_by_field or search_clinical_trials with filters; the backend
+  builds sponsor ↔ condition links from trial records (up to {aggregation_top_n} trials).
+- For time series, use search_clinical_trials or count_trials_by_field with filters; the backend
+  buckets trial start dates by year or month from sampled trials (up to {aggregation_top_n}).
 
 Data format for charts (bar/pie):
 - data: [{{"label": "Phase 2", "count": 12}}, {{"label": "Phase 3", "count": 8}}]
 - encoding: x="label", y="count"
+
+Data format for time series (optional — backend may rebuild from trials):
+- chart_type: "timeseries"
+- data: [{{"date": "2020-01-01", "count": 5}}, {{"date": "2021-01-01", "count": 12}}]
+- encoding: x="date", y="count"
+
+Data format for network graphs (optional — backend may rebuild from trials):
+- chart_type: "network"
+- data: [{{"nodes": [{{"id": "sponsor:Pfizer", "label": "Pfizer", "group": "sponsor"}}], "links": [{{"source": "sponsor:Pfizer", "target": "condition:Diabetes", "value": 2}}]}}]
+- encoding: label="label", color="group"
 
 Data format for tables (only when listing trials):
 - data: [{{"nct_id": "...", "title": "...", "status": "...", ...}}]
@@ -98,6 +115,7 @@ def create_visualization_agent(settings: Settings | None = None) -> Agent:
         config.openai_model,
         config.aggregation_top_n,
         config.chart_pie_max_buckets,
+        "network-timeseries-v1",
     )
     if _cached_agent is None or _agent_cache_key != cache_key:
         _agent_cache_key = cache_key

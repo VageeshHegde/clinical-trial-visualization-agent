@@ -288,6 +288,233 @@ function renderGroupedBarD3(viz, root) {
     .on("mouseleave", () => tooltip.style("opacity", 0));
 }
 
+function networkGraphPayload(viz) {
+  const row = viz.data?.[0] || {};
+  return {
+    nodes: row.nodes || viz.meta?.nodes || [],
+    links: row.links || viz.meta?.links || [],
+  };
+}
+
+function renderNetworkD3(viz, root) {
+  if (!window.d3) return;
+
+  const { nodes, links } = networkGraphPayload(viz);
+  if (!nodes.length) {
+    root.innerHTML = '<p class="viz-empty">No network data to display.</p>';
+    return;
+  }
+
+  const width = root.clientWidth || 720;
+  const height = 420;
+
+  const wrap = document.createElement("div");
+  wrap.className = "network-graph";
+  root.appendChild(wrap);
+
+  const svg = d3
+    .select(wrap)
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("width", "100%")
+    .attr("height", height);
+
+  const graphNodes = nodes.map((node) => ({ ...node }));
+  const graphLinks = links.map((link) => ({ ...link }));
+
+  const groupColor = d3.scaleOrdinal(CHART_COLORS).domain(["sponsor", "condition", "trial"]);
+
+  const simulation = d3
+    .forceSimulation(graphNodes)
+    .force(
+      "link",
+      d3
+        .forceLink(graphLinks)
+        .id((node) => node.id)
+        .distance(90)
+        .strength(0.5)
+    )
+    .force("charge", d3.forceManyBody().strength(-220))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(28));
+
+  const tooltip = d3.select("body").append("div").attr("class", "d3-tooltip");
+
+  const link = svg
+    .append("g")
+    .attr("class", "network-links")
+    .selectAll("line")
+    .data(graphLinks)
+    .join("line")
+    .attr("class", "network-link")
+    .attr("stroke-width", (d) => Math.max(1.5, Math.sqrt(d.value || 1)));
+
+  const node = svg
+    .append("g")
+    .attr("class", "network-nodes")
+    .selectAll("g")
+    .data(graphNodes)
+    .join("g")
+    .attr("class", "network-node")
+    .call(
+      d3
+        .drag()
+        .on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        })
+    );
+
+  node
+    .append("circle")
+    .attr("r", (d) => (d.group === "sponsor" ? 12 : 9))
+    .attr("fill", (d) => groupColor(d.group || "trial"));
+
+  node
+    .append("text")
+    .attr("x", 14)
+    .attr("y", 4)
+    .text((d) => d.label || d.id)
+    .attr("class", "network-label");
+
+  node
+    .on("mousemove", (event, d) => {
+      tooltip
+        .style("opacity", 1)
+        .html(`<strong>${d.label || d.id}</strong><br>${d.group || "node"}`)
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY - 18}px`);
+    })
+    .on("mouseleave", () => tooltip.style("opacity", 0));
+
+  simulation.on("tick", () => {
+    link
+      .attr("x1", (d) => d.source.x)
+      .attr("y1", (d) => d.source.y)
+      .attr("x2", (d) => d.target.x)
+      .attr("y2", (d) => d.target.y);
+
+    node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+  });
+}
+
+function renderTimeseriesD3(viz, root) {
+  if (!window.d3) return;
+
+  const xField = fieldName(viz.encoding, "x", "date");
+  const yField = fieldName(viz.encoding, "y", "count");
+  const rows = [...(viz.data || [])]
+    .map((row) => ({
+      date: d3.isoParse(rowValue(row, xField)),
+      count: numericValue(row, yField),
+    }))
+    .filter((row) => row.date instanceof Date && !Number.isNaN(row.date))
+    .sort((a, b) => a.date - b.date);
+
+  if (!rows.length) {
+    root.innerHTML = '<p class="viz-empty">No time series data to display.</p>';
+    return;
+  }
+
+  const width = root.clientWidth || 720;
+  const height = 380;
+  const margin = { top: 20, right: 20, bottom: 56, left: 52 };
+  const innerWidth = width - margin.left - margin.right;
+  const innerHeight = height - margin.top - margin.bottom;
+
+  const wrap = document.createElement("div");
+  wrap.className = "timeseries-graph";
+  root.appendChild(wrap);
+
+  const svg = d3
+    .select(wrap)
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("width", "100%")
+    .attr("height", height);
+
+  const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+  const x = d3
+    .scaleTime()
+    .domain(d3.extent(rows, (d) => d.date))
+    .range([0, innerWidth]);
+
+  const y = d3
+    .scaleLinear()
+    .domain([0, d3.max(rows, (d) => d.count) || 1])
+    .nice()
+    .range([innerHeight, 0]);
+
+  const granularity = viz.meta?.timeseries_granularity || "year";
+  const xTickFormat =
+    granularity === "month" ? d3.timeFormat("%b %Y") : d3.timeFormat("%Y");
+
+  const tooltip = d3.select("body").append("div").attr("class", "d3-tooltip");
+
+  const area = d3
+    .area()
+    .x((d) => x(d.date))
+    .y0(innerHeight)
+    .y1((d) => y(d.count))
+    .curve(d3.curveMonotoneX);
+
+  const line = d3
+    .line()
+    .x((d) => x(d.date))
+    .y((d) => y(d.count))
+    .curve(d3.curveMonotoneX);
+
+  g.append("path")
+    .datum(rows)
+    .attr("class", "timeseries-area")
+    .attr("d", area);
+
+  g.append("path")
+    .datum(rows)
+    .attr("class", "timeseries-line")
+    .attr("d", line);
+
+  g.append("g")
+    .attr("transform", `translate(0,${innerHeight})`)
+    .attr("class", "d3-axis")
+    .call(d3.axisBottom(x).ticks(Math.min(rows.length, 8)).tickFormat(xTickFormat));
+
+  g.append("g")
+    .attr("class", "d3-axis")
+    .call(d3.axisLeft(y).ticks(6));
+
+  g.selectAll("circle.timeseries-point")
+    .data(rows)
+    .join("circle")
+    .attr("class", "timeseries-point")
+    .attr("cx", (d) => x(d.date))
+    .attr("cy", (d) => y(d.count))
+    .attr("r", 4)
+    .on("mousemove", (event, d) => {
+      const label =
+        granularity === "month"
+          ? d3.timeFormat("%B %Y")(d.date)
+          : d3.timeFormat("%Y")(d.date);
+      tooltip
+        .style("opacity", 1)
+        .html(`<strong>${label}</strong><br>${d.count} trials`)
+        .style("left", `${event.pageX + 12}px`)
+        .style("top", `${event.pageY - 18}px`);
+    })
+    .on("mouseleave", () => tooltip.style("opacity", 0));
+}
+
 function renderVisualization(viz) {
   clearChartRoot();
   const root = document.getElementById("chart-root");
@@ -311,6 +538,12 @@ function renderVisualization(viz) {
       break;
     case "grouped_bar":
       renderGroupedBarD3(viz, root);
+      break;
+    case "network":
+      renderNetworkD3(viz, root);
+      break;
+    case "timeseries":
+      renderTimeseriesD3(viz, root);
       break;
     case "bar":
     default:

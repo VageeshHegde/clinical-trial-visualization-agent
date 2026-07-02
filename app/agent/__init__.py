@@ -1,1 +1,1 @@
-"""Run the FastAPI server: uvicorn app.api:app --reload"""
+"""Run the FastAPI server locally: python main.py --serve"""
