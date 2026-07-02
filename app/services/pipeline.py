@@ -17,6 +17,7 @@ from app.models.schemas import (
     TrialSummary,
 )
 from app.services.conversation import build_agent_input, contextual_question, trim_history
+from app.services.tracing_config import build_run_config, postprocess_span, query_trace
 from app.services.visualization_builder import enhance_visualization
 
 
@@ -34,27 +35,44 @@ async def answer_question(request: QueryRequest) -> QueryResponse:
     question_context = contextual_question(request.question, history)
 
     agent = create_visualization_agent(settings)
+    run_config = build_run_config(
+        question=request.question,
+        history=history,
+        source="api",
+    )
+
     try:
-        result = await Runner.run(agent, agent_input)
+        with query_trace(
+            question=request.question,
+            history=history,
+            source="api",
+        ):
+            with postprocess_span("Agent run"):
+                result = await Runner.run(agent, agent_input, run_config=run_config)
+
+            agent_output = result.final_output
+            if not isinstance(agent_output, AgentVisualizationOutput):
+                raise TypeError("Agent did not return an AgentVisualizationOutput")
+
+            with postprocess_span("Extract trials"):
+                trials = _extract_trials_from_run(
+                    result, sample_size=settings.clamp_agent_trial_limit()
+                )
+
+            with postprocess_span(
+                "Enhance visualization",
+                chart_type=agent_output.visualization.chart_type.value,
+            ):
+                visualization = enhance_visualization(
+                    question_context,
+                    result,
+                    agent_output.visualization,
+                    trials=trials,
+                )
     except Exception as exc:
         if is_token_rate_limit_error(exc):
             raise ValueError(TOKEN_RATE_LIMIT_MESSAGE) from exc
         raise
-
-    agent_output = result.final_output
-    if not isinstance(agent_output, AgentVisualizationOutput):
-        raise TypeError("Agent did not return an AgentVisualizationOutput")
-
-    trials = _extract_trials_from_run(
-        result, sample_size=settings.clamp_agent_trial_limit()
-    )
-
-    visualization = enhance_visualization(
-        question_context,
-        result,
-        agent_output.visualization,
-        trials=trials,
-    )
 
     return QueryResponse(
         question=request.question,

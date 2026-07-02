@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agents import Agent, AgentOutputSchema
+from agents import Agent, AgentOutputSchema, tool_namespace
 
 from app.clinical_trials.tools import (
     count_trials_by_field,
@@ -10,6 +10,7 @@ from app.clinical_trials.tools import (
 )
 from app.config import Settings, get_settings
 from app.models.schemas import AgentVisualizationOutput
+from app.services.tracing_config import TOOL_NAMESPACE
 
 _VISUALIZATION_INSTRUCTIONS_TEMPLATE = """\
 You are a clinical trials data analyst for ClinicalTrials.gov.
@@ -65,15 +66,21 @@ def create_visualization_agent(settings: Settings | None = None) -> Agent:
     config = settings or get_settings()
     config.require_openai_api_key()
 
-    return Agent(
-        name="Clinical Trial Visualization Agent",
-        instructions=build_visualization_instructions(config),
-        tools=[
+    clinical_trials_tools = tool_namespace(
+        TOOL_NAMESPACE,
+        "Query ClinicalTrials.gov for trial counts, lists, lookups, and filter enums.",
+        [
             count_trials_by_field,
             search_clinical_trials,
             get_clinical_trial,
             get_clinical_trial_filter_options,
         ],
+    )
+
+    return Agent(
+        name="Clinical Trial Visualization Agent",
+        instructions=build_visualization_instructions(config),
+        tools=clinical_trials_tools,
         output_type=AgentOutputSchema(AgentVisualizationOutput, strict_json_schema=False),
         model=config.openai_model,
     )
