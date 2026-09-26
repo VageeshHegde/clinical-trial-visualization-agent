@@ -2,7 +2,7 @@
 
 AI-powered backend that lets users ask questions about clinical trials in plain English. The system interprets intent, queries [ClinicalTrials.gov](https://clinicaltrials.gov/), analyzes results, and returns a structured visualization specification for a frontend to render.
 
-**Live demo:** [clinical-trial-visualization-agent-chi.vercel.app](https://clinical-trial-visualization-agent-chi.vercel.app/)  
+**Live demo:** [clinical-trial-visualization-agent-chi.vercel.app](https://clinical-trial-visualization-agent.vercel.app)
 **API docs:** [Swagger UI](https://clinical-trial-visualization-agent-chi.vercel.app/docs)  
 **Demo video:** [Demo walkthrough](https://drive.google.com/file/d/1HFjyqS4_mUVKbI1op6sQEVnIAUDlhiEk/view?usp=sharing)
 
